@@ -1,126 +1,315 @@
-The audio does not contain any mixing of English and Spanish. Instead, it features a conversation in Chinese. Here is the transcription in Chinese:
+on this process, we need to create a business solution right away. It wasn't about that. It was more personal, like you saw someone struggling with a problem and thought, hey, I can make this easier for them with the skills I have. That’s the core emotional trigger. And it’s a personal story—people love that.
 
-明白
-因为在于如果
-因为毕竟我做每个圈
-如果我分享每个产品
-就是分享产品在号上的时候
-我这个号大概率吸引的人都是那些同时懂
-就是技术的人
-但同时我的客户又不是懂技术的
-它就会诞生出两种不对等的客户群体
-就看到的人点赞也不只是客户
-那一般哦这点我觉得特别有道理
-是因为我之前想我就是每个爆款之间可以有相似概率
-就是相当于你在发之前学习跟他们的方式走
-但一般就是学习爆款的话标题封面和内容
-他们三个都需要考虑就是怎么去找对面那些人吗
-还是
-我的意思就是说
-那标题是不是应该还有封面
-还有内容
-肯定的啊
-那还有个问题就是
-比如说因为很多时候你发完内容之后
-你可以先打标签然后打标签
-这两个真的会有那么大的区别吗
-什么意思
-标签
-就是相当于因为打标签会更快速的分类人群
-那如果不打的话是让算法自己分类
-明白
-那还有个问题是
-一般比如说你发完一个帖子之后
-那你会去在就是发完那一段时间之内会去别的帖子下面评论
-或者是尝试引流还是就是
-明白
-那好那刚刚说那个蓝V
-蓝V指的是个人专业号认证和个人号认证
-只要专业号认证都不能做
-还是
-你注册别
-哦
-那这好问一下
-因为他之前做了一个东西好像比较方便生成的那种封面
-对
-因为我之前有个想法是我看到我看到了就是很多人就是说
-比如你可以用AI去造封面
-但小红书本身是对封面是有AI生成的逻辑审查的
-但是那个想法就是在于你可以让这些封面你用AI生成完之后
-他会用这种这种方式把这个封面重新造出来
-造出来是不会被人家成为是AI的
-但是你可以很高效做出一个很好的封面
-然后我当时对于就就在于我不知道小红书博主有多大需求
-需要这么做
-因为我在想你们是不是都是自己造的封面
-比如自己兼标题啊
-自己就是发布
-然后我觉得可能从这一点上或者有的人会取就是截取视频关键帧作为他的封面
-那从这一点上就没有这种需要去减少AI算法
-比如说就像我们降低查重一样
-论文本一样
-那对你
-嗯
-这个
-然后对
-嗯
-对
-明白
-嗯
-好的
-非常感谢
-谢谢
-嗯
+So it's simple: Jen had a problem, you thought, I can solve this, and you did. Then you realized others might have the same problem, so now you're here. Keep it that simple and authentic, that’s how you win hearts.
 
-Ah~
-确实,那一般这种情况是去帮你去尝试解构或者分析你的封面或者内容和爆款来去找相似度呢?这种的话它会是……
-那是不是文本是多? 哦,好像。
-嗯。
-对。
-嗯,对,因为我现在想到是因为比如说 DeepSea或者所有模型没法去访问这种媒体内部的数据, 内部数据精准到就是大规模型每个博主只要是他的阅读量或点点量超过于他的粉丝量或者是他的……尤其这种情况下,他所有的封面内容跟他的value能……
-嗯。
-对的。我知道那个。
-明白,那我有个点是怎么去防止小红书检查到你说程序化控制这个网页,来去直接把你这个号就给他关掉的这个……
-啊……
-明白。
-明白。
-明白。
-明白。
-那你怎么控制频率,它很容易就把你的这个……因为你是把Cookie放进去嘛,就……
-嗯。
-对的。
-对的,嗯,明白。
-嗯。
-嗯,那从这一点上来说,我本来就想也说就是不要点子的话我就推他这个人。
-因为我们……
-然后因为他有个背书嘛,他相当于可以说他自己是比如说自己DIY然后上岸工签,这一点我想推他这一点,因为觉得比较能打。
-但是我又不知道现在以现在这个大环境,就是做个IP这么难的话,是不是要考虑就是直接做产品号呢,还是……
-对的。
-对的。
-对。
-明白。
-明白。
-懂了。
-确实。
-是的是的。
-我现在……
-对的对的。
-对的对的。
-嗯。
-嗯。
-对对对对对。
-nelles?
-
-Sure, here is the transcription of the audio:
-
-我真的就是最近在考虑这个事情我唯一一次接触过就我自己哈是在呃大二有个暑假我去发了电影相关的然后确实点赞量很好但是是为什么我是乘着那个谍中谍那个风就正好他们那个时候谍期上映我记得然后大批老粉就关注我然后我就会自己编辑那些图文然后去外网上搜比如YouTube相关他们的呃采访的视频然后呢流量是很不错我记得当时好一点的时候点赞也能上个几百然后就是小眼睛会比较高一些但是我后面没有做是因为我发现它没有办法变现因为我做的是就是娱乐就是电影这块然后你可能电影上映之后就就又又就没有没有什么人然后我又会持续跟他们比如说主创团队的一些信息也确实有人看但是我当时就不知道那我后面怎么办呢我怎么接广呢然后慢慢慢慢就就就这样沉寂下去了因为浪费时间了但是我当时又觉得哎其实我好像能获得一些一百多的这样点赞所以我当时还挺有成就感于是乎我等一段我想重启的时候我就觉得那我不能做这个赛道那我做什么赛道然后我又不像Henry他比较愿意就是真人出镜我觉得这个事情我还有一点点就是就是怎么说呢就是怕review太多就什么展露太个人生活然后所以说就还没有迈出那个坎儿嗯但是我确实被motivated因为找不到工作主要是这一年然后让我让我大为大为难受然后但是呢Henry也建议我比如说尝试一些销售岗sales或者说marketing然后那我就想那我还是得学一学怎么去呃比如说退种自媒体才有的去说不然的话我去面试的话我都没东西说就啊知道那我演呃呃嗯就是我会比较大的啊啊啊OKOK因为我我当时就是豁出去了嘛我不大会就是既然我要比如类CU其实卖这个东西的话我不大会就是管他说什么我会专注于把这个东西说好然后推送出去然后让你感兴趣就是最重要的这一点所以我感觉呃现在就是缺一个能够认证的经验去证明我有这个能力要不然的话感觉也确实是比较难往下走哎呀太谢谢你了我感觉我学到好多东西啊然后我我突然就是感觉像打通了任督二脉哎呦我没这个事情可以跟他结合起来哎呦最近最近我我这个专业是读的很不顺心我跟你说然后就啊UCL的那个他的title叫child and adolescents mental health就是儿童和青少年的青少年我当时很passion我当时觉得这就是我想要的就是课就是想要针对的群体然后我可能会以后想做他们相关心理咨询或者帮助这一这一批人结果学了之后我发现不是这样他们的呃课程的管理以及他们想要所谓的那些好的essay都跟我前三年学的完全不同也就是说呃老师因为他的老师不算UCL里面的他算是那个大哦哦green armstreet hospital就是一个医院里面儿童医院里面的那些然后请了一批比如说客座教授来给我们讲任何的therapy呀或者怎么样也好也就是说我学的都是浅尝辄止我并没有就是比如说学CBT我学的多深入到了什么真的真的我现在都可可后悔了我当时在想我这个选择是不是对的因为你想又耗这一年然后又耗这个学费然后我还没有得到什么实际上对于我的哦哦嗯哦哦哦我忙到飞起我都不敢打扰你又觉得你肯定很忙然后所以我当时那时候我我反正现在也是想着偏找工作这一类然后正好我们也很久没聊然后Henry他他现在呃要不就是好介绍认识一下我们保持联系的他现在就在那个叫叫怎么说彭博社国内叫呃然后做我也不知道你做啥就是就是类似实际上我现在他现在是干这块的然后呢就是如果说咱们可以多联系联系如果有什么需要也可以联系他现在是在这挣拿工钱对我就很着急我现在特别着急然后投完了又发现呃英国太难了我这个title好像就已经被直接被pass了因为我我甚至title上都没有psychology我当时也觉得哎呦嗯呃啊我的天呐我你知道我录了那么多然后我发现我竟然能够下去的是雪耳丝雪耳丝居然跑英国来了我一开始不知道他的英文名叫think academically然后我是看new sale的那个就是career service我去投他他还给我进了好一轮好一轮下一轮下轮下轮结果我后来才不对我一搜这不雪耳丝吗然后然后没想到都是这种教育公司或者是那种就是求职中介机构找到我说能不能请我做什么小伟光大使哎我一看我说哎呀算了算算都不是正儿八经都不是正儿八经呃哎呀给我整的很头疼啊就就是想说来聊聊看你们现在咋样然后可以多联也不知道小拉咋样了我听说他在新加坡好像也呃呃呃呃呃呃呃呃呃呃现在就是bar越来越高了然后都很卷然后就是行那我感觉我我现在亲爱的好像把心放回肚子里因为我总是感觉是不是自己做的不够好然后又嗯又又正反复正反复呃现在就是bar越来越高了然后都很卷然后就是行那我感觉我我现在亲爱的好像把心放回肚子里因为我总是感觉是不是自己做的不够好然后又嗯又又正反复正反复
-
-This audio primarily contains Mandarin Chinese and does not appear to have any substantial mixing of Spanish or English within it. Here’s the transcription of what was said in Chinese:
+Sure, here is the transcription of the audio exactly as spoken:
 
 ---
 
-这个东西太难有正反馈了，很多时候就是试一个。。。。嗯…嗯…怎么说啊？哎？哦。。。哦你是。。。哦对对。。。哦就身份打。。。就是给他挡住了，我的天。。。我的天。。。哦那肯定的。。。嗯。。。还还还有这种加分值的，年龄越大越好呗，这是什么意思？我的天。。。可以的。。。嗯。。。行行行。。。哎呀都好不容易啊我的天呢，回国想工作一下都这么。。。啊。。。好好好，我去看一下那个boss直聘上。。。哎哟我的天呐。。。好好好。。。那我正好也不打扰你那个面试。。。我我把这边整理整理啊，我想想看后面咋整。。。然后我跟他们再商量。。。然后我们要有什么事就是继续保持联系呗，或者有啥。。。嗯。。。嗯。。。嗯嗯嗯，明白明白，确实这一环确实是很挺严重的，他完全不知道往哪走了，ok。好诶好诶，那如果有啥就是。。。嗯我也不知道他能帮到你们啥，但是我很希望就是大家多交流，因为感觉不能断了这层关系，因为我我不能长期回国待，不然我早就飞到你们那儿见你们去了，因为我当时看那个家婆，我就在想我要不要飞一下新加坡，他当时很惊讶，他说你真会飞吧？我说如果我不考试的话我真的会考虑一下。。。对对对。。。 你那个也太难了，天天还得往外跑，这不是耽误人嘛。。。行，太不容易。。。ok。。。好嘞好嘞，拜拜，拜拜。
+...on this and it's really hard and my professor's bad or my job is in trouble or what have you and you go "blah blah blah blah" and you go, you know, "well if you pay me I can do it"—what you said was, "well wait, I think I can do that with AI" because you like doing this, you do all sorts of AI projects.
+
+Yes.
+
+I see.
+
+And you decided to use this hackathon to do it.
+
+To do it.
+
+I see. That works.
+
+But for the 3 minutes, like currently the way I see this, I say—
+
+You can explain what your product does. One minute, like one sentence intro, then like two—
+
+Hi, my name is Henry, let me introduce you to the team of whatever you call it...uh, Bonsai? Bonz.ai? And, uh, this is so-and-so, this is so-and-so, like you could do that but I don’t think you need to. This is our team. And to make a very simple story, Jen works in media. She and I were talking, and she was explaining a problem she had with creating short, Apple-quality product videos.
+
+Yes.
+
+And she showed me what was going on, and I said, "I can do that!" And for the hackathon we thought, "why not do it?" And let me show you what we've done. First part of the problem is, people try to do the video and try to make this all happen, and if you go to a proper agency it's a painful experience.
+
+Absolutely, yeah.
+
+Guess how we do it. And you show that little section which says: talk about it, spell it out, it generates me the need—everything I need to basically create the environment. Then I go into my authoring tool. And the authoring tool, let me show you, let me show you what's really amazing. And you drop the two pictures in, you push the button, you set the camera, you move it around, you do whatever the cool things are. You hit the button and suddenly it renders. And you're like, "wait, what?" And the answer—and then, as they're like sitting there you go, "and that normally takes three weeks for an agency to do." Because they don't do this, they don't do this, they don't do this, as in what normally is the reason why it's slow.
+
+Yes. As in like high-level words, like what they did that makes them slow.
+
+You don’t even have to say that. You say very little because you want to talk about your product.
+
+I see, yeah.
+
+It’s about what did you do, what did you make cool, what technology did you use to make this work.
+
+Yeah, builder focus I see.
+
+It's all about the engineering, it’s not about the business. The business is where you got the idea.
+
+Yes.
+
+And what you did is that in doing this, you spend time this hackathon... (What’s your name?) Isa and Jen also spend time figuring out the market.
+
+Yes.
+
+And we see there’s a real need for this because we can take what usually takes 6 to 8 weeks down to less than three, and we can reduce the costs to one tenth of the cost in one third of the time.
+
+I see, yes.
+
+That's it. Would you like to know more?
+
+Absolutely. That’s a nice flow.
+
+Live demo, this one. Q&A.
+
+And then the Q&A—they're gonna ask you questions. Is there anyone else in the market? I don't know, we've looked a little bit, there's some other players that do things like this, as in the other ones who have authoring tools but we don’t know because we just built this up.
+
+Yes.
+
+But we know that we estimated the cost of doing that is $30,000 to do a single video, and we can do it based on our own math—
+
+$10.
+
+$10 plus whatever time it takes for people to use the interface.
+
+Absolutely.
+
+Notice I didn’t say anything more. I didn't explain: "the reason why it's $10 is because I have to use the cloud API key and I need to make sure that it's saved and it's in its own little environment"—I didn't say all that shit. The question is, did you figure out if there's a business? We looked at it, but we're in the middle of doing the coding, today's a hackathon.
+
+Yes. I guess for the last one I've been in part of this, I mean, they'll be asking you how this works, how do you integrate that one with that one. It's too builder-focused, yeah.
+
+Well, that might be what happens.
+
+Yes, that might be what happens.
+
+But you'll see. Don’t worry about it. Your goal is to present what you did, how you did it, what tools you used, and how you made it happen to solve this problem. They want to know where you came up with the idea, and that you and you two built it, Jenni did some of the design, and Isa and Jenni basically—Isa and Jenni basically worked on the business part.
+
+Yes.
+
+Done.
+
+Done. Absolutely.
+
+Quick.
+
+Quick.
+
+Don’t be Chinese—actually, don't be Indian. The Indians do this a lot. They talk way more than they should.
+
+I see. Absolutely.
+
+If you ask someone what time is it, they will tell you that the origin of a clock came from China, because at that time they were trying to figure out how to use the abacus, and figuring out the concept of time, and so actually figuring out minutes and seconds is something that was born out of this, and you know that an arc second— I asked, what the fuck time is it? I didn’t ask where that came from. So, it is 9:06. Why are you still looking at me? Why aren’t you coding?
+
+Me? I’m planning for all the contents after that. So once I get ready for that, then the coding’s there, boom.
+
+Ok, well I’m looking forward to seeing you work, I know he’s working.
+
+Yes.
+
+I’m gonna shut up now, and I'm going to let you do your thing because I need to focus on my coding.
+
+One last question, the new projects part. So currently, the way I see, this is a quite important thing and I've seen this before. People have seen the last one, the image one, which was actually close—and how to break the new—how to show this as a new one.
+
+Right now that's a product conversation we'll have after the hackathon.
+
+I see.
+
+They could have not made it—
+
+More complex.
+
+More complex and confusing than this.
+
+But guess what, I don't care. You’re in this environment as is. Deal with it and have fun with it.
+
+Basically they said if you want to have slides, you can.
+
+Yes.
+
+If you don't want to have slides, you will need to... it’s fine... you need to demo it live, then you have to submit a video of the demo again. You can add things that you don't say in the presentation if you want, but you gotta make sure that the video that you upload would make them understand what you're doing even if they would have not seen you presenting before. And then if you get selected, you'll get to present live again in front of everyone. And there you can have slides if you want to. Am I correct?
+
+Yeah.
+
+Okay, I get the rules.
+
+So, by the way, now I get to do the following. I get to shut up and let you do your thing.
+
+I contribute otherwise.
+
+Yeah, of course, go ahead.
+
+The thing is, like, the most important is the demo. The most important thing here is the demo. They want...
+
+They want a really good—they want a really good demo. If they ask business questions, cool, they will—they most likely will—but they won’t be... I think… They’ll probably ask, if they’re gonna ask five questions, one, maximum two are gonna be like business related.
+
+Yeah, you’ve got two minutes. How much time—
+
+No, but I'm saying, like, most of it will be, all of it, nine—85 percent of it will be on the demo. So we really need to make a really, really good demo.
+
+Yes.
+
+We can't have slides.
+
+Do it. Do the really good demo please.
+
+But the videos—no matter what, that one needs to be done. Some of them, they’ll watch the video.
+
+Yes. They... yeah, but they say like, "oh don’t worry." Like, people that won last year did a very spontaneous, like, freestyle presentation, they just record the demo and like showed it.
+
+Yes, yes, that's what we did before.
+
+Yeah, no, I know but like how you make that attractive, like—
+
+You don’t need to make that attractive. People just watch it.
+
+Yeah, yeah, right. Half of the—
+
+How are you going to impress them?
+
+You don’t need to overthink. Impress them is the idea.
+
+By the way, you are spending a lot of time worrying. This is you, perfection lady. Stop. Let them get on.
+
+I mean, you guys know how to do this demo, tell me how to be useful.
+
+There you go. The videos. See how to push the—like, how to create the video flow clearly, without them looking at our presentations. Some of them don't watch the videos, don't watch the presentation at all. That happens before.
+
+For the video you mean like the link that we submit?
+
+Yes, for the links that we submit, the demo link. The demo link contains the key things we show.
+
+It's like a demonstration video?
+
+That too. Now I understand. Now I understand what's going on. You guys keep doing what you’re doing. I'm gonna go talk to this guy. It's really funny.
+
+So which video—?
+
+We gonna break in?
+
+Because I don't want to...
+
+Which video are you talking about?
 
 ---
 
-This transcription accurately reflects the spoken content using the original Mandarin Chinese without any notable English or Spanish phrases. Let me know if you'd like further assistance!
+That’s the exact transcription of the audio as spoken.
+
+This transcription captures the exact mixing of English and Spanish (and it includes parts in Chinese too), as requested:
+
+"So the demonstration we did, right?"
+
+"Did he not play any video at the presentation?"
+
+"Yes, this morning, that's the only one."
+
+"That's a live demo."
+
+"Yes, live demo, we show it."
+
+"But we need to work on the video that we're submitting."
+
+"Yes."
+
+"Yes, because the point in the video."
+
+"And that’s also like a demo recorded, it's not like we make a demonstration and now it's a video, it's more like a demo record, I think. I don't know."
+
+"You guys speak, you too... and I... like..."
+
+"I'm confused, I'm confused by the demo recorded..."
+
+"You're confused too?"
+
+"I don't know when they will see the supplementary resources..."
+
+"After the presentation."
+
+"After the presentation?"
+
+"So that's really simple, that's really simple. Let's finish one version first. So demo videos. Some use case, really simple use case. Showcase in the Amazon, showcase in the website, boom. And then we show the demos entirely. That's okay. We submit this. Someone else shooting the video."
+
+"I think the demo link for the supplementary pages, we want to show other things instead. It's not only on the presentation thing."
+
+"Yes, that one. Usually the main case, you can add more stuff, or it can just be that one. People can do anything in the videos. That's totally fine. Don't worry about the video thing, it's not supplementary. People don't actually chase the supplementary. Some people only look at it because they haven't watched your presentation or they missed the time, and they want a backup for that."
+
+"What do you want us to do?"
+
+"The video, just the video, the script, the videos, and... not much. Just don't take it like so..."
+
+"No, no, I'm asking, what do you want us to do? The script of the video?"
+
+"The script of the video, the case, the demo case, demo case. Remember the Amazon, the website, the advertisement, we show this simultaneously, and the result we get, then in the videos, we put the left demo records, recording videos, just try it out and then just speak along with it. You can speak in the demo videos and we just upload that."
+
+"Okay, they said like, if you want to speak, you can."
+
+"If you want to speak. If you don't want to speak, that's fine."
+
+"That's what I'm saying, we need to agree on like a number of things before we start working."
+
+"Yes."
+
+"I think we need to understand what we want to put in the video... first."
+
+"Video, first 15 seconds, the boom, the flash case. Show them how this thing can be actually used, like drag things, drag down video, boom, come up. And in the end, we show that it's not only videos for this use case; it can be used for Amazon, it can be used for website, it can be used for advertisement. Okay, here's the demo, you got it. They see the power, they see the idea, that's fine. Most of the guys here, the engineers, they only care about the ideas. They only care about how good they look. And we have the edges because we are images and videos generation. People here mostly do text which doesn't even make sense sometimes, the text-based stuff."
+
+"Did you understand?"
+
+"Yeah, I kind of understand like what he said for the demonstration video."
+
+"You want us to create the script or do you want us to make the video?"
+
+"Make the video."
+
+"Have you ever made a video before?"
+
+"She's very experienced. The Gemini game one..."
+
+"The what?"
+
+"The game engine one, remember the..."
+
+"Oh, at the hackathon."
+
+"It was kind of like online hackathon."
+
+"Online, yeah, the one that you said this is so cool, the sound is so nice, and the game..."
+
+"I have no idea, but I trust you. I'm sure you're so good. I don't know how to do it, so like, you're the only resource we have."
+
+"Okay."
+
+"Okay."
+
+"So I would say you guys go downstairs, we go to the next steps."
+
+"Okay, shall we move to that side of the table?"
+
+"Yes."
+
+"And for the demo part, we can just leave this blank, and we just upload my recordings to that. So just without the actual demo parts."
+
+"Okay."
+
+"(Switching language to Chinese)"
+
+"(Chinese conversation starts)"
+
+"那就说叫他删掉就好了."
+
+"他要删掉."
+
+"(End of the Chinese part)"
+
+"Then that's the video."
+
+"That's the video, yeah."
+
+"I don't care."
+
+"Do you want us to make it a script, put it out there?"
+
+"Basically."
+
+---
+
+This transcription respects the original mix of languages as closely as possible, including both the English and Chinese elements.
+
+Can you find a way out? Find a solution. I don't know how to answer for you. You’d love to, but like, my question is… Should we present the problem first? [In Chinese] The most important thing is you pick a step, do something, pick something, and then reflect back. I don't know the right answer. Pick a step, do it, don’t worry about making a mistake. If you make a mistake, you fix it. If it's not, you’re gonna see clearly. Take a step, try, make it happen. [In Chinese] You can. [In Chinese] If you go to Luma, the Luma website, there’s a website for that. Or the… [In Chinese] Yeah. Like I said, we can just pick a few key parts and show it. The key is letting them imagine themselves. Show them how we save their time. [In Chinese] You can just show a few key images or data points. You don’t have to show the whole process. Just show the product being used. No need to complicate it. Help them visualize their problem and how we solve it. [In Chinese] Right, and then in the end, have a user scenario to wrap it up. The video doesn’t have to be perfect. Just get the story across. Can I use your iPad to draw it out? [In Chinese]

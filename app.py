@@ -9,7 +9,7 @@ load_dotenv()
 
 # --- CONFIGURATION ---
 API_KEY = os.getenv("OPENAI_API_KEY")
-INPUT_FILE = "/Users/henryzhang/Documents/audio_note/🌰.m4a"
+INPUT_FILE = "/Users/yuyu/Downloads/Lidl.m4a"
 
 client = OpenAI(api_key=API_KEY)
 
