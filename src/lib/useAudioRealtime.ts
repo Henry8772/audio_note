@@ -13,12 +13,18 @@ export function useAudioRealtime() {
     setIsConnecting,
     addOrUpdateTranscriptItem,
     clearTranscript,
+    selectedLanguages,
+    transcriptItems,
+    summaries,
+    addSavedNote,
+    setSummaries,
   } = useAppStore();
 
   const connect = useCallback(async () => {
     try {
       setIsConnecting(true);
       clearTranscript();
+      setSummaries({});
 
       // 1. Get Microphone
       let micStream: MediaStream;
@@ -106,7 +112,7 @@ export function useAudioRealtime() {
           api_key: apiKey,
           model: "stt-rt-v4",
           audio_format: "auto", // WebM is detected automatically
-          language_hints: ["en", "zh"], // English and Chinese
+          language_hints: selectedLanguages, // Use dynamic selected languages
           enable_language_identification: true,
           enable_speaker_diarization: true, // Will label Speaker 1, Speaker 2, etc.
           enable_endpoint_detection: true,
@@ -166,9 +172,39 @@ export function useAudioRealtime() {
       setIsConnecting(false);
       setIsListening(false);
     }
-  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript]);
+  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries]);
 
   const stopListening = useCallback(() => {
+    // 1. Auto-save before destroying the current streams, if we have content
+    const currentItems = useAppStore.getState().transcriptItems;
+    const currentSummaries = useAppStore.getState().summaries;
+    
+    if (currentItems.length > 0) {
+      const now = new Date();
+      
+      // Determine a smart title based on summary or fall back to generic timestamp
+      let title = "Meeting Note";
+      const defaultLangSummary = currentSummaries['en'] || Object.values(currentSummaries)[0];
+      
+      if (defaultLangSummary) {
+        // Try getting the first line heading, e.g "# Discussion about X" -> "Discussion about X"
+        const firstLine = defaultLangSummary.split('\\n')[0];
+        if (firstLine && firstLine.startsWith('# ')) {
+          title = firstLine.replace('# ', '').trim().slice(0, 50);
+        } else if (firstLine) {
+          title = firstLine.substring(0, 50);
+        }
+      }
+      
+      addSavedNote({
+        id: crypto.randomUUID(),
+        title: title || `Note ${now.toLocaleTimeString()}`,
+        date: now.toISOString(),
+        summaries: currentSummaries,
+        transcriptItems: [...currentItems],
+      });
+    }
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
@@ -188,7 +224,9 @@ export function useAudioRealtime() {
 
     setIsListening(false);
     setIsConnecting(false);
-  }, [setIsListening, setIsConnecting]);
+    
+    // UI Cleanup to prep for next run is done on connect() so user can still see what they just recorded.
+  }, [setIsListening, setIsConnecting, addSavedNote]);
 
   return { connect, stopListening };
 }
