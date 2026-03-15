@@ -27,6 +27,9 @@ interface AppState {
   selectedLanguages: string[]; // For STT
   translationLanguages: string[]; // For target LLM sumamries
   
+  // Auth State
+  isAuthenticated: boolean;
+
   // Navigation State
   activeView: 'record' | 'notes';
   
@@ -43,6 +46,7 @@ interface AppState {
   setLastSummarizedTextLength: (len: number) => void;
   setSelectedLanguages: (langs: string[]) => void;
   setTranslationLanguages: (langs: string[]) => void;
+  setIsAuthenticated: (val: boolean) => void;
   
   // New actions for notes and view
   setActiveView: (view: 'record' | 'notes') => void;
@@ -62,6 +66,7 @@ export const useAppStore = create<AppState>()(
       lastSummarizedTextLength: 0,
       selectedLanguages: ["en", "zh"],
       translationLanguages: ["en"],
+      isAuthenticated: false,
       activeView: 'record',
       savedNotes: [],
 
@@ -69,6 +74,7 @@ export const useAppStore = create<AppState>()(
       setIsConnecting: (val) => set({ isConnecting: val }),
       setSelectedLanguages: (langs) => set({ selectedLanguages: langs }),
       setTranslationLanguages: (langs) => set({ translationLanguages: langs }),
+      setIsAuthenticated: (val) => set({ isAuthenticated: val }),
       
       addOrUpdateTranscriptItem: (item) => {
         set((state) => {
@@ -100,7 +106,8 @@ export const useAppStore = create<AppState>()(
         // Only persist these fields.
         savedNotes: state.savedNotes,
         selectedLanguages: state.selectedLanguages,
-        translationLanguages: state.translationLanguages
+        translationLanguages: state.translationLanguages,
+        isAuthenticated: state.isAuthenticated
       }),
     }
   )

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2 } from "lucide-react";
+import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -40,12 +40,19 @@ export default function Home() {
     setActiveView,
     savedNotes,
     deleteSavedNote,
-    addSavedNote
+    addSavedNote,
+    isAuthenticated,
+    setIsAuthenticated
   } = useAppStore();
 
   const { connect, stopListening } = useAudioRealtime();
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+  // Auth State
+  const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -243,6 +250,71 @@ date: ${note.date}
   };
 
   const activeNote = savedNotes.find(n => n.id === selectedNoteId);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password) return;
+    setIsAuthenticating(true);
+    setAuthError('');
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsAuthenticated(true);
+      } else {
+        setAuthError(data.error || 'Authentication failed');
+      }
+    } catch (err) {
+      setAuthError('Network error connecting to auth server.');
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="h-screen w-full bg-black flex items-center justify-center font-sans selection:bg-neutral-800 selection:text-white">
+        <div className="w-full max-w-sm p-8 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-xl flex flex-col items-center">
+          <div className="w-12 h-12 bg-neutral-900 rounded-xl flex items-center justify-center mb-6 border border-neutral-800/50 shadow-sm">
+            <Lock className="w-5 h-5 text-neutral-400" />
+          </div>
+          <h1 className="text-xl font-semibold text-white mb-2 tracking-tight">Private Access</h1>
+          <p className="text-sm text-neutral-500 mb-8 text-center leading-relaxed">
+            This application is currently in closed beta testing. Please enter the password to continue.
+          </p>
+          
+          <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
+            <div>
+               <input
+                 type="password"
+                 value={password}
+                 onChange={e => setPassword(e.target.value)}
+                 placeholder="Enter password..."
+                 className="w-full bg-[#111] border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-mono"
+                 disabled={isAuthenticating}
+               />
+               {authError && (
+                 <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-400 text-xs mt-2.5 font-medium ml-1">
+                   {authError}
+                 </motion.p>
+               )}
+            </div>
+            <button
+              type="submit"
+              disabled={isAuthenticating || !password}
+              className="w-full bg-white text-black font-semibold text-sm py-3 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+            >
+              {isAuthenticating ? <Loader2 className="w-4 h-4 animate-spin text-neutral-500" /> : "Continue"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full bg-black text-neutral-200 flex font-sans overflow-hidden selection:bg-neutral-800 selection:text-white">
