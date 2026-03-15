@@ -2,9 +2,11 @@ import { useRef, useCallback } from 'react';
 import { useAppStore } from './store';
 
 export function useAudioRealtime() {
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const dcRef = useRef<RTCDataChannel | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const sysStreamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   const {
     setIsListening,
@@ -18,104 +20,146 @@ export function useAudioRealtime() {
       setIsConnecting(true);
       clearTranscript();
 
-      // 1. Request microphone IMMEDIATELY during the click gesture
-      let ms: MediaStream;
+      // 1. Get Microphone
+      let micStream: MediaStream;
       try {
-        ms = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = ms;
+        micStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true } 
+        });
+        micStreamRef.current = micStream;
       } catch (e) {
-        console.warn("Microphone not available", e);
         throw new Error("Microphone access is required.");
       }
 
-      // 2. Fetch the Ephemeral Token from your server
-      const res = await fetch("/api/session");
-      if (!res.ok) throw new Error("Failed to get session token");
-      const data = await res.json();
-      const token = data.client_secret.value;
+      // 2. Ask user to share a screen/tab to capture System Audio
+      let sysStream: MediaStream | null = null;
+      try {
+        sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        sysStreamRef.current = sysStream;
+      } catch (e) {
+        console.warn("User cancelled system audio/screen share.");
+      }
 
-      // 3. Initialize WebRTC Peer Connection
-      const pc = new RTCPeerConnection();
-      pcRef.current = pc;
+      // 3. Mix the audio streams using Web Audio API
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioCtxRef.current = audioCtx;
+      const destination = audioCtx.createMediaStreamDestination();
 
-      // Add the local microphone track to the connection
-      pc.addTrack(ms.getTracks()[0]);
+      const micSource = audioCtx.createMediaStreamSource(micStream);
+      micSource.connect(destination);
 
-      // 4. Set up Data Channel for sending/receiving events
-      const dc = pc.createDataChannel("oai-events");
-      dcRef.current = dc;
+      if (sysStream && sysStream.getAudioTracks().length > 0) {
+        const sysAudioStream = new MediaStream(sysStream.getAudioTracks());
+        const sysSource = audioCtx.createMediaStreamSource(sysAudioStream);
+        sysSource.connect(destination);
+      }
 
-      dc.onopen = () => {
-        setIsConnecting(false);
-        setIsListening(true);
-        
-        // Send our session configuration once the channel is open
-        dc.send(JSON.stringify({
-          type: "session.update",
-          session: {
-            modalities: ["text"], // Add "audio" here if you want it to speak
-            instructions: "You are a real-time meeting transcriber. Listen to the conversation and immediately transcribe the speech verbatim. Do not add any conversational filler or answer questions.",
-            turn_detection: {
-              type: "server_vad",
-              threshold: 0.5,
-              prefix_padding_ms: 300,
-              silence_duration_ms: 200,
-            }
+      // 4. Fetch the Soniox API Key securely
+      const keyRes = await fetch("/api/soniox-token");
+      if (!keyRes.ok) throw new Error("Failed to get Soniox key");
+      const { apiKey } = await keyRes.json();
+
+      // 5. Connect to Soniox WebSocket
+      const ws = new WebSocket("wss://stt-rt.soniox.com/transcribe-websocket");
+      wsRef.current = ws;
+
+      // 6. Set up the Native Browser MediaRecorder using the Mixed Audio
+      // Soniox auto-detects WebM, so this works perfectly out of the box!
+      const mediaRecorder = new MediaRecorder(destination.stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+
+      let finalTokens: any[] = [];
+
+      // Helper function to render tokens into readable text
+      const renderTokens = (final: any[], nonFinal: any[]) => {
+        let textParts = [];
+        let currentSpeaker = null;
+        let currentLanguage = null;
+
+        for (const token of [...final, ...nonFinal]) {
+          let text = token.text;
+
+          if (token.speaker && token.speaker !== currentSpeaker) {
+            if (currentSpeaker !== null) textParts.push("\n\n");
+            currentSpeaker = token.speaker;
+            currentLanguage = null; 
+            textParts.push(`Speaker ${currentSpeaker}: `);
           }
-        }));
+
+          if (token.language && token.language !== currentLanguage) {
+            currentLanguage = token.language;
+            textParts.push(`[${currentLanguage}] `);
+            text = text.trimStart();
+          }
+
+          textParts.push(text);
+        }
+        return textParts.join("");
       };
 
-      dc.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-        
-        if (msg.type === "response.text.delta") {
-          addOrUpdateTranscriptItem({
-            id: msg.item_id || msg.response_id,
-            role: "assistant",
-            text: msg.delta,
-            isFinal: false,
-          });
-        } else if (msg.type === "response.text.done") {
-          addOrUpdateTranscriptItem({
-            id: msg.item_id || msg.response_id,
-            role: "assistant",
-            text: msg.text,
-            isFinal: true,
-          });
-        } else if (msg.type === "conversation.item.input_audio_transcription.completed") {
-           addOrUpdateTranscriptItem({
-            id: msg.item_id,
-            role: "user",
-            text: msg.transcript,
-            isFinal: true
-          });
+      ws.onopen = () => {
+        setIsConnecting(false);
+        setIsListening(true);
+
+        // Send Initial Soniox Config
+        ws.send(JSON.stringify({
+          api_key: apiKey,
+          model: "stt-rt-v4",
+          audio_format: "auto", // WebM is detected automatically
+          language_hints: ["en", "zh"], // English and Chinese
+          enable_language_identification: true,
+          enable_speaker_diarization: true, // Will label Speaker 1, Speaker 2, etc.
+          enable_endpoint_detection: true,
+        }));
+
+        // Tell the MediaRecorder to send a chunk of audio every 250 milliseconds
+        mediaRecorder.start(250);
+      };
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+          ws.send(e.data);
         }
       };
 
-      // 5. Start the session using Session Description Protocol (SDP)
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+      ws.onmessage = (e) => {
+        const res = JSON.parse(e.data);
 
-      const sdpResponse = await fetch("https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17", {
-        method: "POST",
-        body: offer.sdp,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/sdp",
-        },
-      });
+        if (res.error_code) {
+          console.error(`Soniox Error: ${res.error_code} - ${res.error_message}`);
+          return;
+        }
 
-      if (!sdpResponse.ok) {
-        const errorText = await sdpResponse.text();
-        console.error("Failed to get SDP answer:", errorText);
-        throw new Error(`Realtime API SDP error: ${sdpResponse.status}`);
-      }
+        let nonFinalTokens: any[] = [];
+        
+        if (res.tokens) {
+          for (const token of res.tokens) {
+            if (token.text) {
+              if (token.is_final) {
+                finalTokens.push(token);
+              } else {
+                nonFinalTokens.push(token);
+              }
+            }
+          }
+        }
 
-      const answer = {
-        type: "answer",
-        sdp: await sdpResponse.text(),
+        // Generate the formatted transcript block
+        const fullTranscript = renderTokens(finalTokens, nonFinalTokens);
+
+        // Update the UI
+        // Note: We use a single ID here so the bubble continuously grows and updates 
+        // with the speaker diarization labels perfectly formatted.
+        addOrUpdateTranscriptItem({
+          id: "soniox-live-session",
+          role: "user",
+          text: fullTranscript,
+          isFinal: res.finished || false
+        });
       };
-      await pc.setRemoteDescription(answer as RTCSessionDescriptionInit);
+
+      ws.onerror = (e) => console.error("WebSocket error:", e);
+      ws.onclose = () => stopListening();
 
     } catch (err) {
       console.error("Connection error:", err);
@@ -125,17 +169,21 @@ export function useAudioRealtime() {
   }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript]);
 
   const stopListening = useCallback(() => {
-    if (dcRef.current) {
-      dcRef.current.close();
-      dcRef.current = null;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
     }
-    if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
+    if (wsRef.current) {
+      wsRef.current.send(""); // Tell Soniox we are done streaming
+      // Add a tiny delay before closing so Soniox can process the final chunk
+      setTimeout(() => wsRef.current?.close(), 500);
+      wsRef.current = null;
     }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+    
+    // Stop all tracks to remove the recording/sharing indicators from the browser tab
+    if (micStreamRef.current) micStreamRef.current.getTracks().forEach(t => t.stop());
+    if (sysStreamRef.current) sysStreamRef.current.getTracks().forEach(t => t.stop());
+    if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+      audioCtxRef.current.close();
     }
 
     setIsListening(false);
