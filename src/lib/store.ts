@@ -26,18 +26,21 @@ interface AppState {
   lastSummarizedTextLength: number; // For interim text changes
   selectedLanguages: string[]; // For STT
   translationLanguages: string[]; // For target LLM sumamries
-  
+
   // Auth State
   isAuthenticated: boolean;
 
   // Navigation State
   activeView: 'record' | 'notes';
-  
-  // Persistence State
+
+  isLive: boolean;
+  liveSessionId: string | null;
   savedNotes: SavedNote[];
 
   setIsListening: (val: boolean) => void;
   setIsConnecting: (val: boolean) => void;
+  setIsLive: (val: boolean) => void;
+  setLiveSessionId: (val: string | null) => void;
   addOrUpdateTranscriptItem: (item: TranscriptItem) => void;
   clearTranscript: () => void;
   setSummaries: (newSummaries: Record<string, string>) => void;
@@ -47,7 +50,7 @@ interface AppState {
   setSelectedLanguages: (langs: string[]) => void;
   setTranslationLanguages: (langs: string[]) => void;
   setIsAuthenticated: (val: boolean) => void;
-  
+
   // New actions for notes and view
   setActiveView: (view: 'record' | 'notes') => void;
   addSavedNote: (note: SavedNote) => void;
@@ -59,6 +62,8 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       isListening: false,
       isConnecting: false,
+      isLive: false,
+      liveSessionId: null,
       transcriptItems: [],
       summaries: {},
       lastSummaryTime: 0,
@@ -72,10 +77,12 @@ export const useAppStore = create<AppState>()(
 
       setIsListening: (val) => set({ isListening: val }),
       setIsConnecting: (val) => set({ isConnecting: val }),
+      setIsLive: (val) => set({ isLive: val }),
+      setLiveSessionId: (val) => set({ liveSessionId: val }),
       setSelectedLanguages: (langs) => set({ selectedLanguages: langs }),
       setTranslationLanguages: (langs) => set({ translationLanguages: langs }),
       setIsAuthenticated: (val) => set({ isAuthenticated: val }),
-      
+
       addOrUpdateTranscriptItem: (item) => {
         set((state) => {
           const idx = state.transcriptItems.findIndex(i => i.id === item.id);
@@ -94,7 +101,7 @@ export const useAppStore = create<AppState>()(
       setLastSummaryTime: (time) => set({ lastSummaryTime: time }),
       setLastSummaryIndex: (idx) => set({ lastSummaryIndex: idx }),
       setLastSummarizedTextLength: (len) => set({ lastSummarizedTextLength: len }),
-      
+
       setActiveView: (view) => set({ activeView: view }),
       addSavedNote: (note) => set((state) => ({ savedNotes: [note, ...state.savedNotes] })),
       deleteSavedNote: (id) => set((state) => ({ savedNotes: state.savedNotes.filter(n => n.id !== id) })),
@@ -102,7 +109,7 @@ export const useAppStore = create<AppState>()(
     {
       name: 'audio-note-storage', // unique name for localStorage key
       storage: createJSONStorage(() => localStorage), // explicitly use localStorage
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         // Only persist these fields.
         savedNotes: state.savedNotes,
         selectedLanguages: state.selectedLanguages,

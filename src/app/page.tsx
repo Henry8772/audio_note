@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock } from "lucide-react";
+import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, Trash2, Lock, Radio, Copy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { useAppStore, TranscriptItem, SavedNote } from "@/lib/store";
+import { useAppStore, SavedNote, TranscriptItem } from "@/lib/store";
 import { useAudioRealtime } from "@/lib/useAudioRealtime";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 const AVAILABLE_LANGUAGES = [
   { code: 'en', label: 'EN' },
@@ -42,12 +44,17 @@ export default function Home() {
     deleteSavedNote,
     addSavedNote,
     isAuthenticated,
-    setIsAuthenticated
+    setIsAuthenticated,
+    isLive,
+    setIsLive,
+    liveSessionId,
   } = useAppStore();
 
   const { connect, stopListening } = useAudioRealtime();
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+
+  const updateSummaryMutation = useMutation(api.mutations.updateSummary);
 
   // Auth State
   const [password, setPassword] = useState('');
@@ -69,11 +76,9 @@ export default function Home() {
     const currentSummaries = state.summaries;
     const currentTranslationLanguages = state.translationLanguages;
 
-    let lastItemHasGrown = false;
     if (currentItems.length > 0 && currentItems.length === currentIndex) {
       const lastItem = currentItems[currentItems.length - 1];
       if (lastItem.text.length > state.lastSummarizedTextLength + 10) {
-        lastItemHasGrown = true;
         currentIndex = currentIndex - 1; // Step back to include the last item
       }
     }
@@ -107,6 +112,15 @@ export default function Home() {
           if (currentItems.length > 0) {
             useAppStore.getState().setLastSummarizedTextLength(currentItems[currentItems.length - 1].text.length);
           }
+
+          const lSid = useAppStore.getState().liveSessionId;
+          if (lSid && data.summaries['en']) {
+            updateSummaryMutation({
+              sessionId: lSid as any,
+              hostId: "anonymous-host",
+              summary: data.summaries['en']
+            }).catch(console.error);
+          }
         }
       }
     } catch (e) {
@@ -132,7 +146,7 @@ export default function Home() {
     }
 
     return () => clearInterval(interval);
-  }, [isListening, isSummarizing]);
+  }, [isListening, isSummarizing, triggerSummary]);
 
   // Export Logic
   const handleExportNotes = async () => {
@@ -142,7 +156,7 @@ export default function Home() {
     const folder = zip.folder("AudioNotes_Export");
     if (!folder) return;
 
-    savedNotes.forEach(note => {
+    savedNotes.forEach((note: SavedNote) => {
       // Serialize Note to Markdown
       const safeTitle = note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       const filename = `${safeTitle}_${new Date(note.date).getTime()}.md`;
@@ -199,7 +213,7 @@ date: ${note.date}
       const date = dateMatch[1].trim();
 
       // Check if already exists to prevent duplicate imports
-      if (useAppStore.getState().savedNotes.some(n => n.id === id)) continue;
+      if (useAppStore.getState().savedNotes.some((n: SavedNote) => n.id === id)) continue;
 
       // Parse body and hidden data
       const remainder = text.replace(fmMatch[0], '').trim();
@@ -249,7 +263,7 @@ date: ${note.date}
     if (e.target) e.target.value = '';
   };
 
-  const activeNote = savedNotes.find(n => n.id === selectedNoteId);
+  const activeNote = savedNotes.find((n: SavedNote) => n.id === selectedNoteId);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -286,22 +300,22 @@ date: ${note.date}
           <p className="text-sm text-neutral-500 mb-8 text-center leading-relaxed">
             This application is currently in closed beta testing. Please enter the password to continue.
           </p>
-          
+
           <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
             <div>
-               <input
-                 type="password"
-                 value={password}
-                 onChange={e => setPassword(e.target.value)}
-                 placeholder="Enter password..."
-                 className="w-full bg-[#111] border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-mono"
-                 disabled={isAuthenticating}
-               />
-               {authError && (
-                 <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-400 text-xs mt-2.5 font-medium ml-1">
-                   {authError}
-                 </motion.p>
-               )}
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter password..."
+                className="w-full bg-[#111] border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-mono"
+                disabled={isAuthenticating}
+              />
+              {authError && (
+                <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-400 text-xs mt-2.5 font-medium ml-1">
+                  {authError}
+                </motion.p>
+              )}
             </div>
             <button
               type="submit"
@@ -326,7 +340,7 @@ date: ${note.date}
             <Mic className="w-3.5 h-3.5 text-black" />
           </div>
           <h1 className="text-[13px] font-semibold tracking-wide text-white hidden md:block whitespace-nowrap overflow-hidden">
-            Henry's Meeting
+            Henry&apos;s Meeting
           </h1>
         </div>
 
@@ -334,8 +348,8 @@ date: ${note.date}
           <button
             onClick={() => setActiveView('record')}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${activeView === 'record'
-                ? 'bg-[#111] text-white shadow-sm border border-neutral-800'
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
+              ? 'bg-[#111] text-white shadow-sm border border-neutral-800'
+              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
               }`}
           >
             <LayoutDashboard className="w-4 h-4 shrink-0" />
@@ -344,8 +358,8 @@ date: ${note.date}
           <button
             onClick={() => setActiveView('notes')}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${activeView === 'notes'
-                ? 'bg-[#111] text-white shadow-sm border border-neutral-800'
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
+              ? 'bg-[#111] text-white shadow-sm border border-neutral-800'
+              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
               }`}
           >
             <Clock className="w-4 h-4 shrink-0" />
@@ -397,8 +411,8 @@ date: ${note.date}
                             }
                           }}
                           className={`text-[11px] px-2.5 py-1 rounded-md uppercase font-medium transition-all ${isSelected
-                              ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50'
-                              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
+                            ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50'
+                            : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
                             } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           {lang.label}
@@ -417,14 +431,39 @@ date: ${note.date}
                     </div>
                   )}
 
+                  {!isListening && (
+                    <button
+                      onClick={() => setIsLive(!isLive)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all ${isLive
+                        ? 'bg-red-500/20 text-red-500 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
+                        : 'bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-neutral-300'
+                        }`}
+                    >
+                      <Radio className={`w-3.5 h-3.5 ${isLive ? 'animate-pulse' : ''}`} />
+                      {isLive ? 'Go Live' : 'Offline'}
+                    </button>
+                  )}
+
+                  {isListening && liveSessionId && (
+                    <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1 relative group cursor-pointer"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/live/${liveSessionId}`);
+                        alert("Viewer Link Copied!");
+                      }}>
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                      <span className="text-[10px] uppercase font-bold text-red-400 tracking-wider">LIVE</span>
+                      <Copy className="w-3 h-3 text-neutral-500 group-hover:text-white transition-colors ml-1" />
+                    </div>
+                  )}
+
                   <button
                     onClick={isListening ? stopListening : connect}
                     disabled={isConnecting}
                     className={`flex items-center gap-2 px-4 py-1.5 rounded-md font-medium text-sm transition-all duration-200 ${isConnecting
-                        ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 cursor-not-allowed'
-                        : isListening
-                          ? 'bg-[#111] text-red-400 hover:bg-red-500/10 hover:text-red-300 border border-neutral-800 hover:border-red-500/30'
-                          : 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
+                      ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 cursor-not-allowed'
+                      : isListening
+                        ? 'bg-[#111] text-red-400 hover:bg-red-500/10 hover:text-red-300 border border-neutral-800 hover:border-red-500/30'
+                        : 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
                       }`}
                   >
                     {isConnecting ? (
@@ -454,7 +493,7 @@ date: ${note.date}
                           <List className="w-5 h-5 text-neutral-500" />
                         </div>
                         <p className="text-sm font-medium text-neutral-400">No transcript data</p>
-                        <p className="text-xs mt-1 text-neutral-600">Click "Start" to begin recording.</p>
+                        <p className="text-xs mt-1 text-neutral-600">Click &quot;Start&quot; to begin recording.</p>
                       </div>
                     ) : (
                       transcriptItems.map((item, idx) => (
@@ -462,11 +501,10 @@ date: ${note.date}
                           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                           key={item.id + idx} className="flex flex-col items-start w-full"
                         >
-                          <div className={`p-4 rounded-xl border w-full flex flex-col gap-1.5 shadow-sm ${
-                            item.role === 'user' 
-                              ? 'bg-[#151515] border-neutral-800/80' 
-                              : 'bg-[#0f172a]/40 border-blue-900/30'
-                          }`}>
+                          <div className={`p-4 rounded-xl border w-full flex flex-col gap-1.5 shadow-sm ${item.role === 'user'
+                            ? 'bg-[#151515] border-neutral-800/80'
+                            : 'bg-[#0f172a]/40 border-blue-900/30'
+                            }`}>
                             <span className={`text-[9px] font-bold uppercase tracking-widest ${item.role === 'user' ? 'text-neutral-500' : 'text-blue-500'}`}>
                               {item.role === 'user' ? 'Speaker' : 'AI Assistant'}
                             </span>
@@ -492,9 +530,9 @@ date: ${note.date}
                       <button
                         onClick={triggerSummary}
                         disabled={
-                          isSummarizing || 
-                          isConnecting || 
-                          transcriptItems.length === 0 || 
+                          isSummarizing ||
+                          isConnecting ||
+                          transcriptItems.length === 0 ||
                           (transcriptItems.length === lastSummaryIndex && transcriptItems[transcriptItems.length - 1].text.length <= lastSummarizedTextLength + 10)
                         }
                         className="text-[10px] px-2.5 py-1.5 rounded-md border border-neutral-700 bg-neutral-800 text-white hover:bg-neutral-700 transition-colors flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
@@ -521,8 +559,8 @@ date: ${note.date}
                                 }
                               }}
                               className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold transition-all ${isSelected
-                                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
+                                ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
                                 } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               {lang.label}
@@ -535,9 +573,9 @@ date: ${note.date}
 
                   {/* Dynamic Grid Rendering */}
                   <div className={`flex-1 overflow-hidden grid ${translationLanguages.length === 1 ? 'grid-cols-1 grid-rows-1' :
-                      translationLanguages.length === 2 ? 'grid-cols-2 grid-rows-1 divide-x divide-neutral-800' :
-                        translationLanguages.length === 3 ? 'grid-cols-2 grid-rows-2 divide-x divide-y divide-neutral-800' :
-                          'grid-cols-2 grid-rows-2 divide-x divide-y divide-neutral-800'
+                    translationLanguages.length === 2 ? 'grid-cols-2 grid-rows-1 divide-x divide-neutral-800' :
+                      translationLanguages.length === 3 ? 'grid-cols-2 grid-rows-2 divide-x divide-y divide-neutral-800' :
+                        'grid-cols-2 grid-rows-2 divide-x divide-y divide-neutral-800'
                     }`}>
                     {translationLanguages.map((lang, index) => {
                       const summaryText = summaries[lang];
@@ -599,7 +637,7 @@ date: ${note.date}
                     type="file"
                     id="folder-import"
                     className="hidden"
-                    // @ts-ignore - webkitdirectory is standard in modern browsers but sometimes clunky in TS types
+                    // @ts-expect-error - webkitdirectory is standard in modern browsers but sometimes clunky in TS types
                     webkitdirectory="true"
                     directory="true"
                     multiple
@@ -630,7 +668,7 @@ date: ${note.date}
                         <p className="text-sm">No notes saved yet.</p>
                       </div>
                     ) : (
-                      savedNotes.map(note => {
+                      savedNotes.map((note: SavedNote) => {
                         const d = new Date(note.date);
                         const isSelectedDate = selectedNoteId === note.id;
                         return (
@@ -638,8 +676,8 @@ date: ${note.date}
                             key={note.id}
                             onClick={() => setSelectedNoteId(note.id)}
                             className={`p-4 rounded-lg cursor-pointer transition-all border ${isSelectedDate
-                                ? 'bg-neutral-900 border-neutral-700'
-                                : 'bg-[#111] border-transparent hover:bg-neutral-900/50 hover:border-neutral-800'
+                              ? 'bg-neutral-900 border-neutral-700'
+                              : 'bg-[#111] border-transparent hover:bg-neutral-900/50 hover:border-neutral-800'
                               }`}
                           >
                             <div className="flex items-start justify-between gap-4">
@@ -697,7 +735,7 @@ date: ${note.date}
                               )}
                               <div className="prose prose-invert prose-neutral max-w-none prose-h1:text-xl prose-h1:font-semibold prose-h1:text-neutral-100 prose-h2:text-lg prose-h2:font-medium prose-h2:text-neutral-200 prose-p:text-[14px] prose-p:leading-relaxed prose-p:text-neutral-300 prose-a:text-white prose-ul:text-[14px] prose-ul:text-neutral-300">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {text || "*Empty.*"}
+                                  {(text as string) || "*Empty.*"}
                                 </ReactMarkdown>
                               </div>
                             </div>
@@ -709,7 +747,7 @@ date: ${note.date}
                             <div className="mt-16 pt-8 border-t border-neutral-800/50">
                               <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest mb-6 border-b border-neutral-800/40 pb-4">Raw Transcript Timeline</h3>
                               <div className="space-y-4">
-                                {activeNote.transcriptItems.map((item, idx) => (
+                                {activeNote.transcriptItems.map((item: TranscriptItem, idx: number) => (
                                   <div key={idx} className="bg-[#111] p-4 rounded-lg border border-neutral-800/50 text-[13px] text-neutral-400 leading-relaxed whitespace-pre-wrap shadow-sm">
                                     {item.text}
                                   </div>

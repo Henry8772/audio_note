@@ -1,4 +1,6 @@
 import { useRef, useCallback } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { useAppStore } from './store';
 
 export function useAudioRealtime() {
@@ -11,14 +13,18 @@ export function useAudioRealtime() {
   const {
     setIsListening,
     setIsConnecting,
+    isLive,
+    setLiveSessionId,
     addOrUpdateTranscriptItem,
     clearTranscript,
     selectedLanguages,
-    transcriptItems,
-    summaries,
-    addSavedNote,
     setSummaries,
+    addSavedNote,
   } = useAppStore();
+
+  const createSession = useMutation(api.mutations.createSession);
+  const updateTranscript = useMutation(api.mutations.updateTranscript);
+  const endSession = useMutation(api.mutations.endSession);
 
   const connect = useCallback(async () => {
     try {
@@ -29,8 +35,8 @@ export function useAudioRealtime() {
       // 1. Get Microphone
       let micStream: MediaStream;
       try {
-        micStream = await navigator.mediaDevices.getUserMedia({ 
-          audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true } 
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
         });
         micStreamRef.current = micStream;
       } catch (e) {
@@ -74,21 +80,35 @@ export function useAudioRealtime() {
       const mediaRecorder = new MediaRecorder(destination.stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = mediaRecorder;
 
-      let finalTokens: any[] = [];
+      if (useAppStore.getState().isLive) {
+        try {
+          // If Live is checked, hit Convex first
+          const hostId = "anonymous-host"; // Optional: grab from user session later
+          const sessionId = await createSession({
+            title: `Live Session ${new Date().toLocaleTimeString()}`,
+            hostId,
+          });
+          setLiveSessionId(sessionId);
+        } catch (err) {
+          console.error("Failed to create live session on Convex:", err);
+        }
+      }
+
+      let finalTokens: Record<string, unknown>[] = [];
 
       // Helper function to render tokens into readable text
-      const renderTokens = (final: any[], nonFinal: any[]) => {
-        let textParts = [];
+      const renderTokens = (final: Record<string, unknown>[], nonFinal: Record<string, unknown>[]) => {
+        const textParts = [];
         let currentSpeaker = null;
         let currentLanguage = null;
 
         for (const token of [...final, ...nonFinal]) {
-          let text = token.text;
+          let text = token.text as string;
 
           if (token.speaker && token.speaker !== currentSpeaker) {
             if (currentSpeaker !== null) textParts.push("\n\n");
             currentSpeaker = token.speaker;
-            currentLanguage = null; 
+            currentLanguage = null;
             textParts.push(`Speaker ${currentSpeaker}: `);
           }
 
@@ -137,7 +157,7 @@ export function useAudioRealtime() {
         }
 
         let nonFinalTokens: any[] = [];
-        
+
         if (res.tokens) {
           for (const token of res.tokens) {
             if (token.text) {
@@ -162,6 +182,16 @@ export function useAudioRealtime() {
           text: fullTranscript,
           isFinal: res.finished || false
         });
+
+        const liveSessionId = useAppStore.getState().liveSessionId;
+        if (liveSessionId) {
+          // Push to Convex
+          updateTranscript({
+            sessionId: liveSessionId as any,
+            transcript: fullTranscript,
+            hostId: "anonymous-host"
+          }).catch(err => console.error("Convex updateTranscript error:", err));
+        }
       };
 
       ws.onerror = (e) => console.error("WebSocket error:", e);
@@ -172,20 +202,20 @@ export function useAudioRealtime() {
       setIsConnecting(false);
       setIsListening(false);
     }
-  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries]);
+  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries, createSession, updateTranscript, setLiveSessionId, isLive]);
 
   const stopListening = useCallback(() => {
     // 1. Auto-save before destroying the current streams, if we have content
     const currentItems = useAppStore.getState().transcriptItems;
     const currentSummaries = useAppStore.getState().summaries;
-    
+
     if (currentItems.length > 0) {
       const now = new Date();
-      
+
       // Determine a smart title based on summary or fall back to generic timestamp
       let title = "Meeting Note";
       const defaultLangSummary = currentSummaries['en'] || Object.values(currentSummaries)[0];
-      
+
       if (defaultLangSummary) {
         // Try getting the first line heading, e.g "# Discussion about X" -> "Discussion about X"
         const firstLine = defaultLangSummary.split('\\n')[0];
@@ -195,7 +225,7 @@ export function useAudioRealtime() {
           title = firstLine.substring(0, 50);
         }
       }
-      
+
       addSavedNote({
         id: crypto.randomUUID(),
         title: title || `Note ${now.toLocaleTimeString()}`,
@@ -214,7 +244,15 @@ export function useAudioRealtime() {
       setTimeout(() => wsRef.current?.close(), 500);
       wsRef.current = null;
     }
-    
+
+    // Check if live session
+    const finalLiveId = useAppStore.getState().liveSessionId;
+    if (finalLiveId) {
+      endSession({ sessionId: finalLiveId as any, hostId: "anonymous-host" })
+        .catch(console.error);
+      useAppStore.getState().setLiveSessionId(null);
+    }
+
     // Stop all tracks to remove the recording/sharing indicators from the browser tab
     if (micStreamRef.current) micStreamRef.current.getTracks().forEach(t => t.stop());
     if (sysStreamRef.current) sysStreamRef.current.getTracks().forEach(t => t.stop());
@@ -224,9 +262,9 @@ export function useAudioRealtime() {
 
     setIsListening(false);
     setIsConnecting(false);
-    
+
     // UI Cleanup to prep for next run is done on connect() so user can still see what they just recorded.
-  }, [setIsListening, setIsConnecting, addSavedNote]);
+  }, [setIsListening, setIsConnecting, addSavedNote, endSession]);
 
   return { connect, stopListening };
 }
