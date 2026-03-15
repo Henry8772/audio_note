@@ -1,280 +1,191 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Upload, Link as LinkIcon, FileVideo, Music, Loader2, CheckCircle2, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { extractAndChunkAudio } from "@/lib/ffmpeg";
-import clsx from "clsx";
+import { useEffect, useRef } from "react";
+import { Mic, Square, Loader2, List, FileText } from "lucide-react";
+import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { useAppStore } from "@/lib/store";
+import { useAudioRealtime } from "@/lib/useAudioRealtime";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"upload" | "url">("upload");
-  const [file, setFile] = useState<File | null>(null);
-  const [url, setUrl] = useState("");
+  const {
+    isListening,
+    isConnecting,
+    transcriptItems,
+    summary,
+    setSummary,
+    lastSummaryTime,
+    setLastSummaryTime
+  } = useAppStore();
 
-  const [statusMsg, setStatusMsg] = useState("");
-  const [progress, setProgress] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [transcription, setTranscription] = useState("");
+  const { connect, stopListening } = useAudioRealtime();
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Auto-scroll transcript
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [transcriptItems]);
 
-  const startProcessing = async (source: File | string) => {
-    setIsProcessing(true);
-    setTranscription("");
-    setStatusMsg("Initializing processing...");
-    setProgress(0);
+  // Summarize loop every 30 seconds
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
 
-    try {
-      // 1. Extract and chunk audio
-      const chunks = await extractAndChunkAudio(
-        source,
-        (msg) => setStatusMsg(msg),
-        (prog) => setProgress(prog)
-      );
+    if (isListening) {
+      interval = setInterval(async () => {
+        const now = Date.now();
+        if (now - lastSummaryTime >= 30000 && transcriptItems.length > 0) {
+          try {
+            // Grab the text from the transcript (ideally rolling window, but here we just take all for brevity)
+            const textToSummarize = transcriptItems
+                .map(i => `${i.role === 'user' ? 'Speaker' : 'Model'}: ${i.text}`)
+                .join('\\n');
 
-      setStatusMsg(`Sending ${chunks.length} chunks for transcription...`);
-      setProgress(0);
-
-      // 2. Transcribe chunks sequentially
-      let fullText = "";
-      for (let i = 0; i < chunks.length; i++) {
-        setStatusMsg(`Transcribing chunk ${i + 1} of ${chunks.length}...`);
-        setProgress(Math.round(((i) / chunks.length) * 100));
-
-        const formData = new FormData();
-        formData.append("audio", chunks[i], `chunk_${i}.mp3`);
-
-        const res = await fetch("/api/transcribe", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(`Transcription failed: ${errorData.error}`);
+            const res = await fetch('/api/summarize', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                transcript: textToSummarize,
+                previousSummary: summary
+              })
+            });
+            
+            if (res.ok) {
+              const data = await res.json();
+              if (data.summary) {
+                setSummary(data.summary);
+                setLastSummaryTime(now);
+              }
+            }
+          } catch (e) {
+            console.error("Failed to summarize", e);
+          }
         }
-
-        const data = await res.json();
-        fullText += data.text + "\n\n";
-        setTranscription(fullText);
-        setProgress(Math.round(((i + 1) / chunks.length) * 100));
-      }
-
-      setStatusMsg("Transcription complete!");
-      setProgress(100);
-
-    } catch (error: any) {
-      console.error(error);
-      setStatusMsg(`Error: ${error.message || "Unknown error occurred"}`);
-    } finally {
-      setIsProcessing(false);
+      }, 5000);
     }
-  };
 
-  const handleFileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setFile(e.dataTransfer.files[0]);
-    }
-  };
+    return () => clearInterval(interval);
+  }, [isListening, transcriptItems, summary, lastSummaryTime, setSummary, setLastSummaryTime]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center py-20 px-4 relative overflow-hidden">
-      {/* Background aesthetic blobs */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] -z-10" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-pink-600/20 rounded-full blur-[120px] -z-10" />
-
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-3xl flex flex-col items-center mb-12"
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-white/10 rounded-2xl glass-panel text-glow">
-            <Music className="w-8 h-8 text-white" />
+    <main className="h-screen w-full bg-zinc-950 text-zinc-100 flex flex-col font-sans overflow-hidden">
+      {/* Header */}
+      <header className="h-16 border-b border-white/10 bg-zinc-900/50 flex items-center justify-between px-6 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+            <Mic className="w-4 h-4 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Audio<span className="gradient-text">Note</span></h1>
+          <h1 className="text-xl font-bold tracking-tight">Meeting Assistant</h1>
         </div>
-        <p className="text-zinc-400 text-lg text-center max-w-lg mb-8">
-          Extract flawless multilingual transcriptions directly from your MP4 audio tracks. Powered by GPT-4o Audio.
-        </p>
 
-        {/* Workspace Card */}
-        <div className="w-full glass-panel rounded-3xl p-6 sm:p-10 relative overflow-hidden">
+        <div className="flex items-center gap-4">
+          {isListening && (
+            <div className="flex items-center gap-2 text-sm text-green-400 bg-green-400/10 px-3 py-1.5 rounded-full border border-green-400/20">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              Active
+            </div>
+          )}
 
-          {/* Tabs */}
-          <div className="flex bg-white/5 rounded-xl p-1 mb-8 w-fit mx-auto border border-white/10">
-            <button
-              onClick={() => setActiveTab("upload")}
-              className={clsx(
-                "px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2",
-                activeTab === "upload" ? "bg-white/15 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
-              )}
-            >
-              <Upload className="w-4 h-4" /> Local MP4
-            </button>
-            <button
-              onClick={() => setActiveTab("url")}
-              className={clsx(
-                "px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2",
-                activeTab === "url" ? "bg-white/15 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
-              )}
-            >
-              <LinkIcon className="w-4 h-4" /> Link URL
-            </button>
+          <button
+            onClick={isListening ? stopListening : connect}
+            disabled={isConnecting}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              isConnecting 
+                ? 'bg-zinc-800 text-zinc-400 cursor-not-allowed'
+                : isListening 
+                  ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20' 
+                  : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-600/20'
+            }`}
+          >
+            {isConnecting ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Connecting</>
+            ) : isListening ? (
+              <><Square className="w-4 h-4 fill-current" /> Stop Listening</>
+            ) : (
+              <><Mic className="w-4 h-4" /> Start Assistant</>
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* Main Dual-Pane Workspace */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-4rem)]">
+        
+        {/* Left Pane: Raw Transcript */}
+        <div className="border-r border-white/10 flex flex-col h-full bg-zinc-950/50">
+          <div className="h-12 border-b border-white/5 flex items-center px-4 shrink-0 bg-zinc-900/30">
+            <List className="w-4 h-4 text-zinc-400 mr-2" />
+            <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest">Live Transcript</h2>
           </div>
-
-          {!isProcessing && transcription === "" && (
-            <AnimatePresence mode="wait">
-              {activeTab === "upload" ? (
-                <motion.div
-                  key="upload"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-col items-center"
-                >
-                  <div
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={handleFileDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full glass-panel-hover border-2 border-dashed border-white/20 rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer group mb-6"
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {transcriptItems.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-zinc-600">
+                <List className="w-12 h-12 mb-4 opacity-20" />
+                <p>No transcript data yet.</p>
+                <p className="text-sm mt-1">Click "Start Assistant" to begin listening.</p>
+              </div>
+            ) : (
+              transcriptItems.map((item, idx) => {
+                // Determine if we should group them, but keeping it simple for now
+                const isUser = item.role === 'user';
+                return (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={item.id + idx} 
+                    className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                   >
-                    <input
-                      type="file"
-                      accept="video/mp4,audio/*"
-                      className="hidden"
-                      ref={fileInputRef}
-                      onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    />
-                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <FileVideo className="w-8 h-8 text-purple-400" />
+                    <span className="text-xs text-zinc-500 mb-1 ml-1 font-medium select-none">
+                      {isUser ? "Speaker (You/Meeting)" : "Model (Transcriber)"}
+                    </span>
+                    <div className={`px-4 py-3 rounded-2xl max-w-[85%] ${
+                      isUser 
+                        ? 'bg-blue-600/20 text-blue-100 border border-blue-500/20 rounded-tr-none' 
+                        : 'bg-zinc-800/50 text-zinc-200 border border-zinc-700 rounded-tl-none'
+                    }`}>
+                      <span className={item.isFinal ? '' : 'animate-pulse'}>
+                        {item.text}
+                      </span>
                     </div>
-                    {file ? (
-                      <p className="text-xl font-medium text-white">{file.name}</p>
-                    ) : (
-                      <>
-                        <p className="text-xl font-medium text-white mb-2">Drag & drop your file</p>
-                        <p className="text-zinc-400 text-sm">MP4, M4A, or MP3 (Max browser limit)</p>
-                      </>
-                    )}
-                  </div>
-                  <button
-                    disabled={!file}
-                    onClick={() => file && startProcessing(file)}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 font-bold text-white shadow-[0_0_20px_rgba(157,78,221,0.4)] hover:shadow-[0_0_30px_rgba(157,78,221,0.6)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Start Transcription
-                  </button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="url"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-col gap-6"
-                >
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <LinkIcon className="w-5 h-5 text-zinc-400" />
-                    </div>
-                    <input
-                      type="url"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      placeholder="Paste a direct URL to an MP4/Audio file..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all duration-300"
-                    />
-                  </div>
-                  <button
-                    disabled={!url}
-                    onClick={() => url && startProcessing(url)}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 font-bold text-white shadow-[0_0_20px_rgba(157,78,221,0.4)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Start Transcription
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
-
-          {/* Processing State */}
-          {isProcessing && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-12"
-            >
-              <div className="relative w-24 h-24 mb-8">
-                <Loader2 className="w-full h-full text-purple-500 animate-spin" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-sm font-bold">{progress}%</span>
-                </div>
-              </div>
-              <h3 className="text-xl font-bold mb-2 text-white">{statusMsg}</h3>
-              <p className="text-zinc-400 text-center max-w-sm">
-                For large files, this process runs in chunks and may take several minutes. Please do not close the window.
-              </p>
-
-              {/* Progress Bar Container */}
-              <div className="w-full max-w-md h-2 bg-white/10 rounded-full mt-8 overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ ease: "linear", duration: 0.5 }}
-                />
-              </div>
-            </motion.div>
-          )}
-
-          {/* Result State */}
-          {!isProcessing && transcription !== "" && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-6 h-6 text-green-400" />
-                  <h3 className="text-xl font-bold text-white">Transcription Complete</h3>
-                </div>
-                <button
-                  onClick={() => setTranscription("")}
-                  className="text-sm text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
-                >
-                  Start Over <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="bg-black/40 border border-white/5 rounded-2xl p-6 max-h-[500px] overflow-y-auto w-full prose prose-invert">
-                {transcription.split('\n').map((paragraph, idx) => (
-                  <p key={idx} className="text-zinc-200 leading-relaxed text-lg mb-4">{paragraph}</p>
-                ))}
-              </div>
-
-              <button
-                onClick={() => {
-                  const blob = new Blob([transcription], { type: 'text/plain' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = 'transcription.txt';
-                  a.click();
-                }}
-                className="mt-6 w-full py-4 rounded-xl bg-white/10 hover:bg-white/20 font-bold text-white border border-white/10 transition-all duration-300"
-              >
-                Download as TXT
-              </button>
-            </motion.div>
-          )}
-
+                  </motion.div>
+                );
+              })
+            )}
+            <div ref={transcriptEndRef} />
+          </div>
         </div>
-      </motion.div>
+
+        {/* Right Pane: Clean Summary */}
+        <div className="flex flex-col h-full bg-zinc-950">
+          <div className="h-12 border-b border-white/5 flex items-center px-4 shrink-0 bg-zinc-900/30">
+            <FileText className="w-4 h-4 text-zinc-400 mr-2" />
+            <h2 className="text-sm font-semibold text-zinc-300 uppercase tracking-widest">AI Meeting Notes</h2>
+            {isListening && transcriptItems.length > 0 && (
+               <span className="ml-auto text-xs text-zinc-500 flex items-center">
+                 <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> Auto-updating every 30s
+               </span>
+            )}
+          </div>
+          <div className="flex-1 overflow-y-auto p-8">
+            {!summary ? (
+              <div className="h-full flex flex-col items-center justify-center text-zinc-600">
+                <FileText className="w-12 h-12 mb-4 opacity-20" />
+                <p>Waiting for enough context to generate summary...</p>
+              </div>
+            ) : (
+              <div className="prose prose-invert prose-zinc max-w-none prose-h1:text-2xl prose-h2:text-xl prose-a:text-blue-400">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {summary}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
     </main>
   );
 }
