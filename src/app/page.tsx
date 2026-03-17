@@ -534,7 +534,7 @@ date: ${note.date}
                   </div>
 
                   {/* Dynamic Grid Rendering */}
-                  <div className={`flex-1 overflow-hidden grid ${translationLanguages.length === 1 ? 'grid-cols-1 grid-rows-1' :
+                  <div className={`flex-1 min-h-0 overflow-hidden grid ${translationLanguages.length === 1 ? 'grid-cols-1 grid-rows-1' :
                       translationLanguages.length === 2 ? 'grid-cols-2 grid-rows-1 divide-x divide-neutral-800' :
                         translationLanguages.length === 3 ? 'grid-cols-2 grid-rows-2 divide-x divide-y divide-neutral-800' :
                           'grid-cols-2 grid-rows-2 divide-x divide-y divide-neutral-800'
@@ -555,7 +555,7 @@ date: ${note.date}
                             </div>
                           )}
 
-                          <div className="flex-1 overflow-y-auto p-6">
+                          <div className="flex-1 min-h-0 overflow-y-auto p-6">
                             {!summaryText ? (
                               <div className="h-full flex flex-col items-center justify-center text-neutral-600 opacity-50">
                                 <FileText className="w-8 h-8 mb-2" />
@@ -686,7 +686,7 @@ date: ${note.date}
                         </button>
                       </div>
 
-                      <div className="flex-1 overflow-y-auto w-full">
+                      <div className="flex-1 min-h-0 overflow-y-auto w-full">
                         {/* We will grid layout the exported notes if they span multiple langs */}
                         <div className={`grid w-full min-h-full ${Object.keys(activeNote.summaries).length > 1 ? 'grid-cols-2 divide-x divide-neutral-800' : 'grid-cols-1'
                           }`}>
