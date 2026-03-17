@@ -439,15 +439,15 @@ date: ${note.date}
               </header>
 
               {/* Workspace */}
-              <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-3.5rem)]">
+              <div className="flex-1 grid grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1 min-h-0">
                 {/* Left Pane: Raw Transcript */}
-                <div className="border-r border-neutral-800 flex flex-col h-full bg-[#0a0a0a]">
+                <div className="border-r border-neutral-800 flex flex-col h-full bg-[#0a0a0a] min-h-0 overflow-hidden">
                   <div className="h-10 border-b border-neutral-800/80 flex items-center px-6 shrink-0 bg-black">
                     <h2 className="text-[10px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2">
                       <List className="w-3.5 h-3.5" /> Live Transcript
                     </h2>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">
                     {transcriptItems.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center text-neutral-600">
                         <div className="w-12 h-12 bg-neutral-900 rounded-xl flex items-center justify-center mb-4 border border-neutral-800/50">
@@ -482,7 +482,7 @@ date: ${note.date}
                 </div>
 
                 {/* Right Pane: Multi-Lang Grid */}
-                <div className="flex flex-col h-full bg-black relative">
+                <div className="flex flex-col h-full bg-black relative min-h-0 overflow-hidden">
                   <div className="h-10 border-b border-neutral-800/80 flex items-center justify-between px-6 shrink-0 bg-black">
                     <h2 className="text-[10px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2">
                       <FileText className="w-3.5 h-3.5" /> AI Notes
@@ -614,9 +614,9 @@ date: ${note.date}
                 </div>
               </header>
 
-              <div className="flex-1 flex overflow-hidden">
+              <div className="flex-1 flex overflow-hidden min-h-0">
                 {/* Notes List Column */}
-                <div className="w-1/3 min-w-[300px] border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-full">
+                <div className="w-1/3 min-w-[300px] border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-full min-h-0">
                   <div className="p-4 border-b border-neutral-800/50 shrink-0">
                     <input
                       type="text"
@@ -624,7 +624,7 @@ date: ${note.date}
                       className="w-full bg-[#111] border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600 transition-colors"
                     />
                   </div>
-                  <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
                     {savedNotes.length === 0 ? (
                       <div className="text-center py-10 text-neutral-600">
                         <p className="text-sm">No notes saved yet.</p>
@@ -643,7 +643,7 @@ date: ${note.date}
                               }`}
                           >
                             <div className="flex items-start justify-between gap-4">
-                              <h3 className="text-sm font-medium text-neutral-200 line-clamp-1 break-all">{note.title}</h3>
+                              <h3 className="text-sm font-medium text-neutral-200 line-clamp-1 break-all flex-1">{note.title}</h3>
                               <span className="text-[10px] text-neutral-500 shrink-0 whitespace-nowrap mt-0.5">
                                 {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                               </span>
@@ -659,7 +659,7 @@ date: ${note.date}
                 </div>
 
                 {/* Note Detail Column */}
-                <div className="flex-1 flex flex-col h-full bg-black relative">
+                <div className="flex-1 flex flex-col h-full bg-black relative min-w-0 min-h-0">
                   {!activeNote ? (
                     <div className="h-full flex flex-col items-center justify-center text-neutral-600">
                       <Clock className="w-12 h-12 mb-4 opacity-20 text-neutral-400" />
