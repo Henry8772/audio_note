@@ -30,6 +30,8 @@ interface AppState {
   
   // Auth State
   isAuthenticated: boolean;
+  freeUsageTime: number;
+  freeUsageExceeded: boolean;
 
   // Navigation State
   activeView: 'record' | 'notes';
@@ -54,6 +56,10 @@ interface AppState {
   setActiveView: (view: 'record' | 'notes') => void;
   addSavedNote: (note: SavedNote) => void;
   deleteSavedNote: (id: string) => void;
+
+  // Trial actions
+  incrementFreeUsageTime: (seconds: number) => void;
+  setFreeUsageExceeded: (val: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -70,6 +76,8 @@ export const useAppStore = create<AppState>()(
       translationLanguages: ["en"],
       selectedMicId: "default",
       isAuthenticated: false,
+      freeUsageTime: 0,
+      freeUsageExceeded: false,
       activeView: 'record',
       savedNotes: [],
 
@@ -79,6 +87,8 @@ export const useAppStore = create<AppState>()(
       setTranslationLanguages: (langs) => set({ translationLanguages: langs }),
       setSelectedMicId: (id) => set({ selectedMicId: id }),
       setIsAuthenticated: (val) => set({ isAuthenticated: val }),
+      incrementFreeUsageTime: (seconds) => set((state) => ({ freeUsageTime: state.freeUsageTime + seconds })),
+      setFreeUsageExceeded: (val) => set({ freeUsageExceeded: val }),
       
       addOrUpdateTranscriptItem: (item) => {
         set((state) => {
@@ -112,7 +122,9 @@ export const useAppStore = create<AppState>()(
         selectedLanguages: state.selectedLanguages,
         translationLanguages: state.translationLanguages,
         selectedMicId: state.selectedMicId,
-        isAuthenticated: state.isAuthenticated
+        isAuthenticated: state.isAuthenticated,
+        freeUsageTime: state.freeUsageTime,
+        freeUsageExceeded: state.freeUsageExceeded
       }),
     }
   )

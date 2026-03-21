@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock } from "lucide-react";
+import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -44,17 +44,49 @@ export default function Home() {
     isAuthenticated,
     setIsAuthenticated,
     selectedMicId,
-    setSelectedMicId
+    setSelectedMicId,
+    freeUsageTime,
+    freeUsageExceeded,
+    incrementFreeUsageTime,
+    setFreeUsageExceeded
   } = useAppStore();
 
   const { connect, stopListening } = useAudioRealtime();
-  const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const transcriptContainerRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Auth State
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Free Usage Tracker (15 mins = 900 seconds)
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isListening && !isAuthenticated) {
+      interval = setInterval(() => {
+        const state = useAppStore.getState();
+        if (state.freeUsageTime >= 900) {
+          state.setFreeUsageExceeded(true);
+          stopListening();
+          setShowAuthModal(true);
+          clearInterval(interval);
+        } else {
+          state.incrementFreeUsageTime(1);
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isListening, isAuthenticated, stopListening]);
+
+  // Handle forcing modal if exceeded on load
+  useEffect(() => {
+    if (!isAuthenticated && freeUsageExceeded) {
+      setShowAuthModal(true);
+    }
+  }, [isAuthenticated, freeUsageExceeded]);
 
   // Media Devices State
   const [availableMics, setAvailableMics] = useState<MediaDeviceInfo[]>([]);
@@ -78,7 +110,9 @@ export default function Home() {
 
   // Auto-scroll transcript
   useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (transcriptContainerRef.current) {
+      transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
+    }
   }, [transcriptItems, activeView]);
 
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -138,23 +172,6 @@ export default function Home() {
     }
   };
 
-  // Summarize loop every 5 seconds polling
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isListening) {
-      interval = setInterval(() => {
-        const state = useAppStore.getState();
-        const now = Date.now();
-        // Check if 30s have passed AND we have new transcript items
-        if (now - state.lastSummaryTime >= 30000 && state.transcriptItems.length > state.lastSummaryIndex) {
-          triggerSummary();
-        }
-      }, 5000);
-    }
-
-    return () => clearInterval(interval);
-  }, [isListening, isSummarizing]);
 
   // Export Logic
   const handleExportNotes = async () => {
@@ -287,6 +304,7 @@ date: ${note.date}
       const data = await res.json();
       if (res.ok && data.success) {
         setIsAuthenticated(true);
+        setShowAuthModal(false);
       } else {
         setAuthError(data.error || 'Authentication failed');
       }
@@ -297,49 +315,90 @@ date: ${note.date}
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="h-screen w-full bg-black flex items-center justify-center font-sans selection:bg-neutral-800 selection:text-white">
-        <div className="w-full max-w-sm p-8 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-xl flex flex-col items-center">
-          <div className="w-12 h-12 bg-neutral-900 rounded-xl flex items-center justify-center mb-6 border border-neutral-800/50 shadow-sm">
-            <Lock className="w-5 h-5 text-neutral-400" />
-          </div>
-          <h1 className="text-xl font-semibold text-white mb-2 tracking-tight">Private Access</h1>
-          <p className="text-sm text-neutral-500 mb-8 text-center leading-relaxed">
-            This application is currently in closed beta testing. Please enter the password to continue.
-          </p>
-          
-          <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
-            <div>
-               <input
-                 type="password"
-                 value={password}
-                 onChange={e => setPassword(e.target.value)}
-                 placeholder="Enter password..."
-                 className="w-full bg-[#111] border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-mono"
-                 disabled={isAuthenticating}
-               />
-               {authError && (
-                 <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-400 text-xs mt-2.5 font-medium ml-1">
-                   {authError}
-                 </motion.p>
-               )}
-            </div>
-            <button
-              type="submit"
-              disabled={isAuthenticating || !password}
-              className="w-full bg-white text-black font-semibold text-sm py-3 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
-            >
-              {isAuthenticating ? <Loader2 className="w-4 h-4 animate-spin text-neutral-500" /> : "Continue"}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  const handleManualSave = () => {
+    if (transcriptItems.length === 0) return;
+    const now = new Date();
+    
+    let title = "Meeting Note";
+    const defaultLangSummary = summaries['en'] || Object.values(summaries)[0];
+    
+    if (defaultLangSummary) {
+      const firstLine = defaultLangSummary.split('\n')[0];
+      if (firstLine && firstLine.startsWith('# ')) {
+        title = firstLine.replace('# ', '').trim().slice(0, 50);
+      } else if (firstLine) {
+        title = firstLine.substring(0, 50);
+      }
+    }
+    
+    addSavedNote({
+      id: crypto.randomUUID(),
+      title: title || `Note ${now.toLocaleTimeString()}`,
+      date: now.toISOString(),
+      summaries: { ...summaries },
+      transcriptItems: [...transcriptItems],
+    });
+
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
+  };
 
   return (
     <div className="h-screen w-full bg-black text-neutral-200 flex font-sans overflow-hidden selection:bg-neutral-800 selection:text-white">
+      {/* Auth Modal Overlay */}
+      <AnimatePresence>
+        {showAuthModal && !isAuthenticated && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center px-4"
+          >
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-sm p-8 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-xl flex flex-col items-center relative">
+              {!freeUsageExceeded && (
+                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors">
+                  <span className="sr-only">Close</span>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              )}
+
+              <div className="w-12 h-12 bg-neutral-900 rounded-xl flex items-center justify-center mb-6 border border-neutral-800/50 shadow-sm">
+                <Lock className="w-5 h-5 text-neutral-400" />
+              </div>
+              <h1 className="text-xl font-semibold text-white mb-2 tracking-tight">Unlock Unlimited Access</h1>
+              <p className="text-sm text-neutral-500 mb-8 text-center leading-relaxed">
+                {freeUsageExceeded 
+                  ? "Your 15-minute free preview has ended. Please enter your access token to continue." 
+                  : "Enter your special access token to unlock unlimited recordings and features."}
+              </p>
+              
+              <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
+                <div>
+                   <input
+                     type="password"
+                     value={password}
+                     onChange={e => setPassword(e.target.value)}
+                     placeholder="Enter token..."
+                     className="w-full bg-[#111] border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-mono"
+                     disabled={isAuthenticating}
+                   />
+                   {authError && (
+                     <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-400 text-xs mt-2.5 font-medium ml-1">
+                       {authError}
+                     </motion.p>
+                   )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={isAuthenticating || !password}
+                  className="w-full bg-white text-black font-semibold text-sm py-3 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                >
+                  {isAuthenticating ? <Loader2 className="w-4 h-4 animate-spin text-neutral-500" /> : "Verify Token"}
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
 
       {/* Left Sidebar Navigation */}
       <aside className="w-16 md:w-56 h-full border-r border-neutral-800/80 bg-black flex flex-col shrink-0 py-4 px-2 md:px-4 transition-all duration-300 z-20">
@@ -403,6 +462,18 @@ date: ${note.date}
                 <h2 className="text-sm font-medium text-white hidden sm:block">Live Session</h2>
 
                 <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+                  {/* Unlock Unlimited Menu / Badge */}
+                  {!isAuthenticated && (
+                    <button
+                      onClick={() => setShowAuthModal(true)}
+                      className="text-[10px] sm:text-[11px] px-2.5 sm:px-3 py-1.5 rounded-md uppercase font-bold bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-all tracking-wider mr-1 sm:mr-2 flex items-center gap-1.5"
+                    >
+                      <Lock className="w-3 h-3" />
+                      <span className="hidden sm:inline">Unlock Unlimited</span>
+                      <span className="sm:hidden">Unlock</span>
+                    </button>
+                  )}
+
                   {/* Mic Selector */}
                   <div className="flex items-center mr-1 sm:mr-2">
                     <select 
@@ -457,7 +528,13 @@ date: ${note.date}
                   )}
 
                   <button
-                    onClick={isListening ? stopListening : connect}
+                    onClick={() => {
+                      if (!isAuthenticated && freeUsageExceeded) {
+                        setShowAuthModal(true);
+                        return;
+                      }
+                      isListening ? stopListening() : connect();
+                    }}
                     disabled={isConnecting}
                     className={`flex items-center gap-2 px-4 py-1.5 rounded-md font-medium text-sm transition-all duration-200 ${isConnecting
                         ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 cursor-not-allowed'
@@ -486,7 +563,7 @@ date: ${note.date}
                       <List className="w-3.5 h-3.5" /> Live Transcript
                     </h2>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0" ref={transcriptContainerRef}>
                     {transcriptItems.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center text-neutral-600">
                         <div className="w-12 h-12 bg-neutral-900 rounded-xl flex items-center justify-center mb-4 border border-neutral-800/50">
@@ -516,7 +593,6 @@ date: ${note.date}
                         </motion.div>
                       ))
                     )}
-                    <div ref={transcriptEndRef} />
                   </div>
                 </div>
 
@@ -528,6 +604,16 @@ date: ${note.date}
                     </h2>
 
                     <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleManualSave}
+                        disabled={transcriptItems.length === 0}
+                        className="text-[10px] px-2.5 py-1.5 rounded-md border border-neutral-700 bg-[#111] text-white hover:bg-neutral-800 transition-colors flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Save Note to Library"
+                      >
+                       {isSaved ? <Save className="w-3 h-3 text-emerald-400" /> : <Save className="w-3 h-3 text-neutral-400" />}
+                       {isSaved ? "SAVED" : "SAVE"}
+                      </button>
+
                       <button
                         onClick={triggerSummary}
                         disabled={
