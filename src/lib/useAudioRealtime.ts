@@ -18,6 +18,7 @@ export function useAudioRealtime() {
     summaries,
     addSavedNote,
     setSummaries,
+    selectedMicId,
   } = useAppStore();
 
   const connect = useCallback(async () => {
@@ -29,9 +30,11 @@ export function useAudioRealtime() {
       // 1. Get Microphone
       let micStream: MediaStream;
       try {
-        micStream = await navigator.mediaDevices.getUserMedia({ 
-          audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true } 
-        });
+        const audioConstraints: any = { noiseSuppression: true, echoCancellation: true, autoGainControl: true };
+        if (selectedMicId && selectedMicId !== "default") {
+          audioConstraints.deviceId = { exact: selectedMicId };
+        }
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
         micStreamRef.current = micStream;
       } catch (e) {
         throw new Error("Microphone access is required.");
@@ -40,8 +43,11 @@ export function useAudioRealtime() {
       // 2. Ask user to share a screen/tab to capture System Audio
       let sysStream: MediaStream | null = null;
       try {
-        sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-        sysStreamRef.current = sysStream;
+        // Only attempt getDisplayMedia if it exists (not on mobile browsers)
+        if (navigator.mediaDevices.getDisplayMedia) {
+          sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+          sysStreamRef.current = sysStream;
+        }
       } catch (e) {
         console.warn("User cancelled system audio/screen share.");
       }
@@ -172,7 +178,7 @@ export function useAudioRealtime() {
       setIsConnecting(false);
       setIsListening(false);
     }
-  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries]);
+  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries, selectedMicId]);
 
   const stopListening = useCallback(() => {
     // 1. Auto-save before destroying the current streams, if we have content

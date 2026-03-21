@@ -26,6 +26,7 @@ interface AppState {
   lastSummarizedTextLength: number; // For interim text changes
   selectedLanguages: string[]; // For STT
   translationLanguages: string[]; // For target LLM sumamries
+  selectedMicId: string; // For audio input device
   
   // Auth State
   isAuthenticated: boolean;
@@ -46,6 +47,7 @@ interface AppState {
   setLastSummarizedTextLength: (len: number) => void;
   setSelectedLanguages: (langs: string[]) => void;
   setTranslationLanguages: (langs: string[]) => void;
+  setSelectedMicId: (id: string) => void;
   setIsAuthenticated: (val: boolean) => void;
   
   // New actions for notes and view
@@ -66,6 +68,7 @@ export const useAppStore = create<AppState>()(
       lastSummarizedTextLength: 0,
       selectedLanguages: ["en", "zh"],
       translationLanguages: ["en"],
+      selectedMicId: "default",
       isAuthenticated: false,
       activeView: 'record',
       savedNotes: [],
@@ -74,6 +77,7 @@ export const useAppStore = create<AppState>()(
       setIsConnecting: (val) => set({ isConnecting: val }),
       setSelectedLanguages: (langs) => set({ selectedLanguages: langs }),
       setTranslationLanguages: (langs) => set({ translationLanguages: langs }),
+      setSelectedMicId: (id) => set({ selectedMicId: id }),
       setIsAuthenticated: (val) => set({ isAuthenticated: val }),
       
       addOrUpdateTranscriptItem: (item) => {
@@ -107,6 +111,7 @@ export const useAppStore = create<AppState>()(
         savedNotes: state.savedNotes,
         selectedLanguages: state.selectedLanguages,
         translationLanguages: state.translationLanguages,
+        selectedMicId: state.selectedMicId,
         isAuthenticated: state.isAuthenticated
       }),
     }
