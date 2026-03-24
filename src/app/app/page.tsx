@@ -548,15 +548,27 @@ date: ${note.date}
               className="flex flex-col h-full w-full absolute inset-0"
             >
               {/* Header */}
-              <header className="h-14 border-b border-neutral-800 bg-black flex items-center justify-between px-6 shrink-0 relative z-10">
-                <h2 className="text-sm font-medium text-white hidden sm:block">Live Session</h2>
+              <header className="min-h-[56px] py-2 border-b border-neutral-800 bg-black flex flex-wrap items-center justify-between px-4 sm:px-6 shrink-0 relative z-10 gap-y-3">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-sm font-medium text-white">Live Session</h2>
+                  {isListening && (
+                    <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-medium text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md border border-emerald-400/20 uppercase tracking-widest">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                      </span>
+                      <span className="hidden sm:inline">Recording</span>
+                      <span className="sm:hidden">Rec</span>
+                    </div>
+                  )}
+                </div>
 
-                <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 ml-auto">
                   {/* Unlock Unlimited Menu / Badge */}
                   {!isAuthenticated && (
                     <button
                       onClick={() => setShowAuthModal(true)}
-                      className="text-[10px] sm:text-[11px] px-2.5 sm:px-3 py-1.5 rounded-md uppercase font-bold bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-all tracking-wider mr-1 sm:mr-2 flex items-center gap-1.5"
+                      className="text-[10px] sm:text-[11px] px-2.5 py-1.5 rounded-md uppercase font-bold bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-all tracking-wider flex items-center gap-1.5"
                     >
                       <Lock className="w-3 h-3" />
                       <span className="hidden sm:inline">Unlock Unlimited</span>
@@ -564,25 +576,8 @@ date: ${note.date}
                     </button>
                   )}
 
-                  {/* Mic Selector */}
-                  <div className="flex items-center mr-1 sm:mr-2">
-                    <select 
-                      value={selectedMicId} 
-                      onChange={(e) => setSelectedMicId(e.target.value)}
-                      className="bg-[#111] text-[11px] text-neutral-400 font-medium px-2 py-1.5 rounded-md border border-neutral-800 outline-none hover:text-white transition-colors max-w-[90px] sm:max-w-[150px] truncate cursor-pointer appearance-none"
-                      disabled={isListening}
-                    >
-                      <option value="default">Default Mic</option>
-                      {availableMics.map(mic => (
-                        <option key={mic.deviceId} value={mic.deviceId}>
-                          {mic.label || `Mic (${mic.deviceId.slice(0, 4)})`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
                   {/* Language Selector */}
-                  <div className="hidden lg:flex items-center gap-1 mr-2 bg-[#111] px-1 py-1 rounded-lg border border-neutral-800">
+                  <div className="flex items-center gap-1 bg-[#111] px-1 py-1 rounded-lg border border-neutral-800">
                     {AVAILABLE_LANGUAGES.map(lang => {
                       const isSelected = selectedLanguages.includes(lang.code);
                       return (
@@ -596,7 +591,7 @@ date: ${note.date}
                               setSelectedLanguages([...selectedLanguages, lang.code]);
                             }
                           }}
-                          className={`text-[11px] px-2.5 py-1 rounded-md uppercase font-medium transition-all ${isSelected
+                          className={`text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded-md uppercase font-medium transition-all ${isSelected
                               ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50'
                               : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
                             } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -606,38 +601,49 @@ date: ${note.date}
                       );
                     })}
                   </div>
+                </div>
+              </header>
 
-                  {isListening && (
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-md border border-emerald-400/20 uppercase tracking-widest">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                      </span>
-                      Recording
-                    </div>
-                  )}
+              {/* Workspace */}
+              <div className="flex-1 grid grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1 min-h-0 relative">
+                {/* Floating Dock */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-neutral-800/80 shadow-[0_0_40px_rgba(0,0,0,0.8)]">
+                  <select 
+                    value={selectedMicId} 
+                    onChange={(e) => setSelectedMicId(e.target.value)}
+                    className="bg-neutral-900 text-[11px] text-neutral-300 font-medium px-2 sm:px-3 py-2 rounded-xl border border-neutral-700 outline-none hover:text-white transition-colors max-w-[90px] sm:max-w-[150px] truncate cursor-pointer appearance-none"
+                    disabled={isListening}
+                  >
+                    <option value="default">Default Mic</option>
+                    {availableMics.map(mic => (
+                      <option key={mic.deviceId} value={mic.deviceId}>
+                        {mic.label || `Mic (${mic.deviceId.slice(0, 4)})`}
+                      </option>
+                    ))}
+                  </select>
 
-                  {/* Share Live Button */}
                   <button
                     onClick={handleShareLive}
                     disabled={!isListening || isSharingLive}
-                    className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 rounded-md uppercase font-bold tracking-wider flex items-center gap-1.5 transition-all outline-none border mr-1 sm:mr-2 ${
+                    className={`text-[10px] sm:text-[11px] px-3 sm:px-4 py-2 rounded-xl uppercase font-bold tracking-wider flex items-center gap-1.5 transition-all outline-none border ${
                       liveSessionId
                         ? "bg-red-500/10 text-red-400 border-red-500/30"
                         : isListening
-                        ? "bg-[#111] text-blue-400 border-neutral-800 hover:text-white hover:bg-neutral-800"
-                        : "bg-[#111] text-neutral-600 border-neutral-800 cursor-not-allowed"
+                        ? "bg-neutral-900 text-blue-400 border-neutral-700 hover:text-white hover:bg-neutral-800"
+                        : "bg-neutral-900 text-neutral-600 border-neutral-800 cursor-not-allowed"
                     }`}
                   >
                     {liveSessionId ? (
                       <>
                         <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                        Live Sharing
+                        <span className="hidden sm:inline">Live Sharing</span>
+                        <span className="sm:hidden">Live</span>
                       </>
                     ) : (
                       <>
                         {isSharingLive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RadioTower className="w-3.5 h-3.5" />}
-                        Share Live
+                        <span className="hidden sm:inline">Share Live</span>
+                        <span className="sm:hidden">Share</span>
                       </>
                     )}
                   </button>
@@ -651,34 +657,31 @@ date: ${note.date}
                       isListening ? stopListening() : connect();
                     }}
                     disabled={isConnecting}
-                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md font-medium text-sm transition-all duration-200 ${isConnecting
+                    className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isConnecting
                         ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 cursor-not-allowed'
                         : isListening
-                          ? 'bg-[#111] text-red-400 hover:bg-red-500/10 hover:text-red-300 border border-neutral-800 hover:border-red-500/30'
-                          : 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_15px_rgba(255,255,255,0.1)]'
+                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
+                          : 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]'
                       }`}
                   >
                     {isConnecting ? (
-                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Connecting</>
+                      <><Loader2 className="w-4 h-4 animate-spin" /> <span className="hidden sm:inline">Connecting</span></>
                     ) : isListening ? (
-                      <><Square className="w-3.5 h-3.5 fill-current" /> Stop</>
+                      <><Square className="w-4 h-4 fill-current" /> Stop</>
                     ) : (
-                      <><Mic className="w-3.5 h-3.5" /> Start</>
+                      <><Mic className="w-4 h-4" /> Start</>
                     )}
                   </button>
                 </div>
-              </header>
 
-              {/* Workspace */}
-              <div className="flex-1 grid grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1 min-h-0">
                 {/* Left Pane: Raw Transcript */}
-                <div className="border-r border-neutral-800 flex flex-col h-full bg-[#0a0a0a] min-h-0 overflow-hidden">
+                <div className="border-r border-neutral-800 flex flex-col h-full bg-[#0a0a0a] min-h-0 overflow-hidden relative">
                   <div className="h-10 border-b border-neutral-800/80 flex items-center px-6 shrink-0 bg-black">
                     <h2 className="text-[10px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2">
                       <List className="w-3.5 h-3.5" /> Live Transcript
                     </h2>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0" ref={transcriptContainerRef}>
+                  <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-6 min-h-0" ref={transcriptContainerRef}>
                     {transcriptItems.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center text-neutral-600">
                         <div className="w-12 h-12 bg-neutral-900 rounded-xl flex items-center justify-center mb-4 border border-neutral-800/50">
@@ -713,12 +716,12 @@ date: ${note.date}
 
                 {/* Right Pane: Multi-Lang Grid */}
                 <div className="flex flex-col h-full bg-black relative min-h-0 overflow-hidden">
-                  <div className="h-10 border-b border-neutral-800/80 flex items-center justify-between px-6 shrink-0 bg-black">
-                    <h2 className="text-[10px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2">
+                  <div className="min-h-[48px] py-2 border-b border-neutral-800/80 flex flex-wrap items-center justify-between px-4 sm:px-6 shrink-0 bg-black gap-y-3">
+                    <h2 className="text-[10px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2 w-full sm:w-auto">
                       <FileText className="w-3.5 h-3.5" /> AI Notes
                     </h2>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
                       <button
                         onClick={handleManualSave}
                         disabled={transcriptItems.length === 0}
@@ -795,7 +798,7 @@ date: ${note.date}
                             </div>
                           )}
 
-                          <div className="flex-1 min-h-0 overflow-y-auto p-6">
+                          <div className="flex-1 min-h-0 overflow-y-auto p-6 pb-24">
                             {!summaryText ? (
                               <div className="h-full flex flex-col items-center justify-center text-neutral-600 opacity-50">
                                 <FileText className="w-8 h-8 mb-2" />
