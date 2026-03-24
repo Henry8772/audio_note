@@ -8,5 +8,6 @@ export default defineSchema({
         summary: v.string(),
         isActive: v.boolean(),
         hostId: v.string(),
+        password: v.optional(v.string()),
     }),
 });

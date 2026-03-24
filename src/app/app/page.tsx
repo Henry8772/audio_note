@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save } from "lucide-react";
+import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,6 +9,8 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useAppStore, TranscriptItem, SavedNote } from "@/lib/store";
 import { useAudioRealtime } from "@/lib/useAudioRealtime";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 const AVAILABLE_LANGUAGES = [
   { code: 'en', label: 'EN' },
@@ -48,8 +50,21 @@ export default function Home() {
     freeUsageTime,
     freeUsageExceeded,
     incrementFreeUsageTime,
-    setFreeUsageExceeded
+    setFreeUsageExceeded,
+    liveSessionId,
+    liveSessionHostId,
+    setLiveSession
   } = useAppStore();
+
+  const createSession = useMutation(api.mutations.createSession);
+  const updateTranscriptMutation = useMutation(api.mutations.updateTranscript);
+  const updateSummaryMutation = useMutation(api.mutations.updateSummary);
+  const endSession = useMutation(api.mutations.endSession);
+
+  const [isSharingLive, setIsSharingLive] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [requirePassword, setRequirePassword] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState("");
 
   const { connect, stopListening } = useAudioRealtime();
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
@@ -290,6 +305,81 @@ date: ${note.date}
 
   const activeNote = savedNotes.find(n => n.id === selectedNoteId);
 
+  const handleShareLive = async () => {
+    if (!isListening) {
+      alert("Please start recording first to share the live session.");
+      return;
+    }
+    setShowShareModal(true);
+    // Generate an initial random 6 character alphanumeric password
+    setGeneratedPassword(Math.random().toString(36).slice(-6).toUpperCase());
+    setRequirePassword(false);
+  };
+
+  const confirmShareLive = async () => {
+    try {
+      setIsSharingLive(true);
+      setShowShareModal(false);
+      const hostId = crypto.randomUUID();
+      const sessionId = await createSession({
+        title: "Henry's Live Meeting",
+        hostId: hostId,
+        password: requirePassword ? generatedPassword : undefined
+      });
+      
+      setLiveSession(sessionId, hostId);
+      
+      const shareUrl = `${window.location.origin}/live/${sessionId}`;
+      await navigator.clipboard.writeText(shareUrl);
+      alert(`Live link copied to clipboard!\n\n${requirePassword ? `Password: ${generatedPassword}\n\nAnyone with the link and password can view the live transcription.` : `Anyone with the link can view the live transcription.`}`);
+      setIsSharingLive(false);
+    } catch (e) {
+      console.error("Failed to create live session", e);
+      setIsSharingLive(false);
+      setShowShareModal(false);
+      alert("Failed to create share link.");
+    }
+  };
+
+  // Push Transcript Updates to Convex
+  useEffect(() => {
+    if (liveSessionId && liveSessionHostId && transcriptItems.length > 0) {
+      const transcriptText = transcriptItems
+        .map(i => `${i.role === 'user' ? 'Speaker' : 'AI Assistant'}: ${i.text}`)
+        .join('\n\n');
+        
+      updateTranscriptMutation({
+        sessionId: liveSessionId as any,
+        transcript: transcriptText,
+        hostId: liveSessionHostId
+      }).catch((err: any) => console.error("Failed to update transcript:", err));
+    }
+  }, [transcriptItems, liveSessionId, liveSessionHostId, updateTranscriptMutation]);
+
+  // Push Summary Updates to Convex
+  useEffect(() => {
+    if (liveSessionId && liveSessionHostId && Object.keys(summaries).length > 0) {
+      const summaryText = Object.entries(summaries)
+        .map(([lang, text]) => `## ${lang.toUpperCase()}\n\n${text}`)
+        .join('\n\n');
+
+      updateSummaryMutation({
+        sessionId: liveSessionId as any,
+        summary: summaryText,
+        hostId: liveSessionHostId
+      }).catch((err: any) => console.error("Failed to update summary:", err));
+    }
+  }, [summaries, liveSessionId, liveSessionHostId, updateSummaryMutation]);
+
+  // End session when stopped listening
+  useEffect(() => {
+    if (!isListening && liveSessionId && liveSessionHostId) {
+      endSession({ sessionId: liveSessionId as any, hostId: liveSessionHostId }).catch(console.error);
+      setLiveSession(null, null);
+      setIsSharingLive(false);
+    }
+  }, [isListening, liveSessionId, liveSessionHostId, endSession, setLiveSession]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password) return;
@@ -526,6 +616,31 @@ date: ${note.date}
                       Recording
                     </div>
                   )}
+
+                  {/* Share Live Button */}
+                  <button
+                    onClick={handleShareLive}
+                    disabled={!isListening || isSharingLive}
+                    className={`text-[10px] sm:text-[11px] px-2.5 py-1.5 rounded-md uppercase font-bold tracking-wider flex items-center gap-1.5 transition-all outline-none border mr-1 sm:mr-2 ${
+                      liveSessionId
+                        ? "bg-red-500/10 text-red-400 border-red-500/30"
+                        : isListening
+                        ? "bg-[#111] text-blue-400 border-neutral-800 hover:text-white hover:bg-neutral-800"
+                        : "bg-[#111] text-neutral-600 border-neutral-800 cursor-not-allowed"
+                    }`}
+                  >
+                    {liveSessionId ? (
+                      <>
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                        Live Sharing
+                      </>
+                    ) : (
+                      <>
+                        {isSharingLive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RadioTower className="w-3.5 h-3.5" />}
+                        Share Live
+                      </>
+                    )}
+                  </button>
 
                   <button
                     onClick={() => {

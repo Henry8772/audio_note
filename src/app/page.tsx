@@ -82,10 +82,6 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, [isListening, stopListening, demoFinished]);
 
-    if (importCount > 0) {
-      alert(`Successfully imported ${importCount} note(s)!`);
-    } else {
-      alert("No valid new notes found to import.");
   // Auto-scroll demo transcript
   useEffect(() => {
     if (demoTranscriptRef.current) {
@@ -130,7 +126,6 @@ export default function LandingPage() {
              </Link>
           </div>
         </div>
-      </aside>
       </nav>
 
       {/* Hero Section */}
@@ -144,6 +139,16 @@ export default function LandingPage() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative z-10 max-w-4xl mx-auto"
         >
+          <a href="https://midhand.ai.studio" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 mb-6 backdrop-blur-md">
+            <div className="w-5 h-5 rounded bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-[0_0_10px_rgba(99,102,241,0.5)]">
+               <Layers className="w-3 h-3 text-white" />
+            </div>
+            <span className="text-sm font-medium text-neutral-300 group-hover:text-white transition-colors">
+              A product by <span className="font-semibold text-white">AI Studio</span>
+            </span>
+            <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+          </a>
+          <br/>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-300 mb-8">
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -178,63 +183,141 @@ export default function LandingPage() {
       </section>
 
       {/* Features Showcase */}
-      <section id="features" className="py-24 md:py-32 px-6 bg-[#050505]">
-        <div className="max-w-7xl mx-auto">
+      <section id="features" className="py-24 md:py-32 px-6 bg-[#050505] relative overflow-hidden">
+        {/* Background Gradients */}
+        <div className="absolute top-40 left-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-40 right-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-20 md:mb-32">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Core Capabilities</h2>
-            <p className="text-neutral-400 max-w-xl mx-auto text-lg leading-relaxed">Everything you need to make the most out of every conversation, instantly.</p>
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">Core Capabilities</h2>
+            <p className="text-neutral-400 max-w-xl mx-auto text-lg md:text-xl leading-relaxed">Everything you need to make the most out of every conversation, instantly.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="flex flex-col gap-32">
             {/* Feature 1 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="bg-[#0a0a0a] rounded-3xl p-8 md:p-10 border border-neutral-800/50 hover:border-neutral-700 transition-colors group"
-            >
-              <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                <Mic className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4 text-white">Real-time Transcription</h3>
-              <p className="text-neutral-400 leading-relaxed font-light">
-                Flawless precision as they speak. Our ultra-low latency model captures every word immediately without lag.
-              </p>
-            </motion.div>
+            <div className="flex flex-col md:flex-row items-center gap-12 md:gap-20">
+              <motion.div 
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="flex-1 space-y-8"
+              >
+                <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.15)]">
+                  <Mic className="w-8 h-8 text-blue-400" />
+                </div>
+                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Real-time <br/>Transcription</h3>
+                <p className="text-neutral-400 leading-relaxed text-lg font-light">
+                  Flawless precision as they speak. Our ultra-low latency model captures every word immediately without lag, so you can stay entirely focused on the conversation.
+                </p>
+                <div className="pt-4">
+                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
+                     <CheckCircle2 className="w-4 h-4 text-blue-500" /> Ultra-low latency
+                   </div>
+                </div>
+              </motion.div>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+                whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="flex-[1.5] w-full perspective-[1000px]"
+              >
+                <div className="aspect-video bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-2xl relative overflow-hidden group flex items-center justify-center transform-gpu preserve-3d">
+                  {/* Video Placeholder Content */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                  <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 group-hover:bg-white text-white group-hover:text-black transition-all duration-500 cursor-pointer shadow-[0_0_40px_rgba(255,255,255,0.1)]">
+                    <Play className="w-8 h-8 ml-1 fill-current" />
+                  </div>
+                  <div className="absolute bottom-6 left-8">
+                     <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
 
             {/* Feature 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="bg-[#0a0a0a] rounded-3xl p-8 md:p-10 border border-neutral-800/50 hover:border-neutral-700 transition-colors group"
-            >
-              <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                <Globe className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4 text-white">Live Translation</h3>
-              <p className="text-neutral-400 leading-relaxed font-light">
-                Break language barriers instantly. Speak in English and have everyone read in Spanish, French, Chinese, or Japanese.
-              </p>
-            </motion.div>
+            <div className="flex flex-col md:flex-row-reverse items-center gap-12 md:gap-20">
+              <motion.div 
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="flex-1 space-y-8"
+              >
+                <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center border border-purple-500/20 shadow-[0_0_30px_rgba(168,85,247,0.15)]">
+                  <Globe className="w-8 h-8 text-purple-400" />
+                </div>
+                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Live <br/>Translation</h3>
+                <p className="text-neutral-400 leading-relaxed text-lg font-light">
+                  Break language barriers instantly. Speak in English and have everyone read in Spanish, French, Chinese, or Japanese in real-time.
+                </p>
+                <div className="pt-4">
+                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
+                     <CheckCircle2 className="w-4 h-4 text-purple-500" /> 50+ Languages Supported
+                   </div>
+                </div>
+              </motion.div>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
+                whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="flex-[1.5] w-full perspective-[1000px]"
+              >
+                <div className="aspect-video bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-2xl relative overflow-hidden group flex items-center justify-center transform-gpu preserve-3d">
+                  <div className="absolute inset-0 bg-gradient-to-bl from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                  <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 group-hover:bg-white text-white group-hover:text-black transition-all duration-500 cursor-pointer shadow-[0_0_40px_rgba(255,255,255,0.1)]">
+                    <Play className="w-8 h-8 ml-1 fill-current" />
+                  </div>
+                  <div className="absolute bottom-6 right-8 text-right">
+                     <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
 
             {/* Feature 3 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="bg-[#0a0a0a] rounded-3xl p-8 md:p-10 border border-neutral-800/50 hover:border-neutral-700 transition-colors group"
-            >
-              <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
-                <Share2 className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4 text-white">Live Meeting Session</h3>
-              <p className="text-neutral-400 leading-relaxed font-light">
-                Open a session, share the link, and let participants read the transcripion stream live from their own devices.
-              </p>
-            </motion.div>
+            <div className="flex flex-col md:flex-row items-center gap-12 md:gap-20">
+              <motion.div 
+                initial={{ opacity: 0, x: -50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="flex-1 space-y-8"
+              >
+                <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+                  <Share2 className="w-8 h-8 text-emerald-400" />
+                </div>
+                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Live Meeting <br/>Session</h3>
+                <p className="text-neutral-400 leading-relaxed text-lg font-light">
+                  Open a session, share the unique link, and let participants read the transcription stream live from their own devices across the globe.
+                </p>
+                <div className="pt-4">
+                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
+                     <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Seamless Synchronization
+                   </div>
+                </div>
+              </motion.div>
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+                whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="flex-[1.5] w-full perspective-[1000px]"
+              >
+                <div className="aspect-video bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-2xl relative overflow-hidden group flex items-center justify-center transform-gpu preserve-3d">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                  <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 group-hover:bg-white text-white group-hover:text-black transition-all duration-500 cursor-pointer shadow-[0_0_40px_rgba(255,255,255,0.1)]">
+                    <Play className="w-8 h-8 ml-1 fill-current" />
+                  </div>
+                  <div className="absolute bottom-6 left-8">
+                     <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -312,14 +395,6 @@ export default function LandingPage() {
                       </Link>
                     )}
                   </div>
-                </div>
-
-                {/* Note Detail Column */}
-                <div className="flex-1 flex flex-col h-full bg-black relative">
-                  {!activeNote ? (
-                    <div className="h-full flex flex-col items-center justify-center text-neutral-600">
-                      <Clock className="w-12 h-12 mb-4 opacity-20 text-neutral-400" />
-                      <p className="text-sm font-medium text-neutral-400">Select a note to view</p>
                 ) : (
                   <div className="space-y-4">
                     {transcriptItems.map((item, idx) => (

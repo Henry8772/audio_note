@@ -1,15 +1,18 @@
 "use client";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { use } from "react";
-import { Mic, FileText, Loader2, List } from "lucide-react";
+import { use, useState } from "react";
+import { Mic, FileText, Loader2, List, Lock } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 export default function LiveSessionViewer({ params }: { params: Promise<{ id: string }> }) {
     const unwrappedParams = use(params);
+    const [enteredPassword, setEnteredPassword] = useState("");
+    const [passwordInput, setPasswordInput] = useState("");
+    
     // This automatically updates in real-time whenever the host speaks!
-    const session = useQuery(api.queries.getSession, { sessionId: unwrappedParams.id as any });
+    const session = useQuery(api.queries.getSession, { sessionId: unwrappedParams.id as any, password: enteredPassword });
 
     if (session === undefined) {
         return (
@@ -28,6 +31,47 @@ export default function LiveSessionViewer({ params }: { params: Promise<{ id: st
                 </div>
                 <p className="text-white text-lg font-semibold">Session Not Found</p>
                 <p className="text-neutral-500 text-sm mt-2">This session may have ended or does not exist.</p>
+            </div>
+        );
+    }
+
+    if (session.hasPassword && !session.isAuthenticated) {
+        return (
+            <div className="min-h-screen w-full bg-black flex flex-col items-center justify-center font-sans selection:bg-neutral-800 selection:text-white p-6">
+                <div className="w-full max-w-sm p-8 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-xl flex flex-col items-center">
+                    <div className="w-12 h-12 bg-neutral-900 rounded-xl flex items-center justify-center mb-6 border border-neutral-800/50 shadow-sm">
+                        <Lock className="w-5 h-5 text-neutral-400" />
+                    </div>
+                    <h1 className="text-xl font-semibold text-white mb-2 tracking-tight">Protected Session</h1>
+                    <p className="text-sm text-neutral-500 mb-8 text-center leading-relaxed">
+                        This live session requires a password.
+                    </p>
+                    
+                    <form onSubmit={(e) => { e.preventDefault(); setEnteredPassword(passwordInput); }} className="w-full flex flex-col gap-4">
+                        <div>
+                            <input
+                                type="text"
+                                value={passwordInput}
+                                onChange={e => setPasswordInput(e.target.value.toUpperCase())}
+                                placeholder="Enter 6-character password"
+                                className="w-full bg-[#111] border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-mono text-center uppercase tracking-widest"
+                                maxLength={6}
+                            />
+                            {enteredPassword && enteredPassword === passwordInput && !session.isAuthenticated && (
+                                <p className="text-red-400 text-xs mt-2.5 font-medium ml-1 text-center">
+                                    Incorrect password. Please try again.
+                                </p>
+                            )}
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={passwordInput.length !== 6}
+                            className="w-full bg-white text-black font-semibold text-sm py-3 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                        >
+                            Enter Session
+                        </button>
+                    </form>
+                </div>
             </div>
         );
     }

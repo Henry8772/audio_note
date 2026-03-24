@@ -60,6 +60,11 @@ interface AppState {
   // Trial actions
   incrementFreeUsageTime: (seconds: number) => void;
   setFreeUsageExceeded: (val: boolean) => void;
+
+  // Live session
+  liveSessionId: string | null;
+  liveSessionHostId: string | null;
+  setLiveSession: (id: string | null, hostId: string | null) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -80,6 +85,8 @@ export const useAppStore = create<AppState>()(
       freeUsageExceeded: false,
       activeView: 'record',
       savedNotes: [],
+      liveSessionId: null,
+      liveSessionHostId: null,
 
       setIsListening: (val) => set({ isListening: val }),
       setIsConnecting: (val) => set({ isConnecting: val }),
@@ -89,6 +96,7 @@ export const useAppStore = create<AppState>()(
       setIsAuthenticated: (val) => set({ isAuthenticated: val }),
       incrementFreeUsageTime: (seconds) => set((state) => ({ freeUsageTime: state.freeUsageTime + seconds })),
       setFreeUsageExceeded: (val) => set({ freeUsageExceeded: val }),
+      setLiveSession: (id, hostId) => set({ liveSessionId: id, liveSessionHostId: hostId }),
       
       addOrUpdateTranscriptItem: (item) => {
         set((state) => {
