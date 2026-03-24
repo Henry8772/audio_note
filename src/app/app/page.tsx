@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower } from "lucide-react";
+import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -228,6 +228,30 @@ date: ${note.date}
     saveAs(content, "AudioNotes_Export.zip");
   };
 
+  const handleDownloadNote = async (note: SavedNote) => {
+    const safeTitle = note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${safeTitle}_${new Date(note.date).getTime()}.md`;
+
+    const frontmatter = `---
+id: ${note.id}
+title: "${note.title.replace(/"/g, '\\"')}"
+date: ${note.date}
+---
+
+`;
+    const body = Object.entries(note.summaries).map(([lang, text]) => {
+      return `## ${lang.toUpperCase()}\\n\\n${text}\\n`;
+    }).join("\\n") || "*No summary available*";
+
+    const hiddenSummariesData = `\n\n<!-- AUDIO_NOTE_SUMMARIES_START\n${JSON.stringify(note.summaries)}\nAUDIO_NOTE_SUMMARIES_END -->`;
+    const hiddenTranscriptData = `\n\n<!-- AUDIO_NOTE_DATA_START\n${JSON.stringify(note.transcriptItems)}\nAUDIO_NOTE_DATA_END -->`;
+
+    const fileContent = frontmatter + body + hiddenSummariesData + hiddenTranscriptData;
+    
+    const blob = new Blob([fileContent], { type: "text/markdown;charset=utf-8" });
+    saveAs(blob, filename);
+  };
+
   // Import Logic
   const handleImportNotes = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -443,52 +467,192 @@ date: ${note.date}
       {/* Auth Modal Overlay */}
       <AnimatePresence>
         {showAuthModal && !isAuthenticated && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center px-4"
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
           >
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-sm p-8 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-xl flex flex-col items-center relative">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-neutral-800/80 rounded-3xl shadow-[0_0_80px_-15px_rgba(255,255,255,0.08)] flex flex-col relative overflow-hidden"
+            >
+              {/* Subtle top glare */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
               {!freeUsageExceeded && (
-                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors">
+                <button 
+                  onClick={() => setShowAuthModal(false)} 
+                  className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
+                >
                   <span className="sr-only">Close</span>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               )}
 
-              <div className="w-12 h-12 bg-neutral-900 rounded-xl flex items-center justify-center mb-6 border border-neutral-800/50 shadow-sm">
-                <Lock className="w-5 h-5 text-neutral-400" />
-              </div>
-              <h1 className="text-xl font-semibold text-white mb-2 tracking-tight">Unlock Unlimited Access</h1>
-              <p className="text-sm text-neutral-500 mb-8 text-center leading-relaxed">
-                {freeUsageExceeded 
-                  ? "Your 15-minute free preview has ended. Please enter your license key to continue." 
-                  : "Enter your license key to unlock unlimited recordings and premium features."}
-              </p>
-              
-              <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
-                <div>
-                   <input
-                     type="password"
-                     value={password}
-                     onChange={e => setPassword(e.target.value)}
-                     placeholder="Enter token..."
-                     className="w-full bg-[#111] border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-mono"
-                     disabled={isAuthenticating}
-                   />
-                   {authError && (
-                     <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-400 text-xs mt-2.5 font-medium ml-1">
-                       {authError}
-                     </motion.p>
-                   )}
+              <div className="flex flex-col items-center mb-8">
+                <div className="w-14 h-14 bg-white rounded-[1.25rem] flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(255,255,255,0.15)] ring-1 ring-white/10">
+                  <Mic className="w-7 h-7 text-black" />
                 </div>
+                <h1 className="text-[22px] font-bold text-white tracking-tight">Welcome to Henry AI</h1>
+                <p className="text-[13px] text-neutral-400 mt-2 text-center leading-relaxed max-w-[280px]">
+                  {freeUsageExceeded 
+                    ? "Your 15-minute free preview has ended. Sign in to unlock unlimited meeting intelligence." 
+                    : "Sign in or create an account to save unlimited notes and live sessions."}
+                </p>
+              </div>
+              
+              <div className="w-full flex flex-col gap-4">
                 <button
-                  type="submit"
-                  disabled={isAuthenticating || !password}
-                  className="w-full bg-white text-black font-semibold text-sm py-3 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                  type="button"
+                  onClick={(e) => {
+                     e.preventDefault();
+                     setIsAuthenticating(true);
+                     setTimeout(() => { setIsAuthenticated(true); setShowAuthModal(false); setIsAuthenticating(false); toast.success("Welcome back!"); }, 1500);
+                  }}
+                  disabled={isAuthenticating}
+                  className="w-full relative group bg-white hover:bg-neutral-100 text-black font-semibold text-[14px] py-3.5 rounded-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
                 >
-                  {isAuthenticating ? <Loader2 className="w-4 h-4 animate-spin text-neutral-500" /> : "Verify Token"}
+                  {isAuthenticating ? (
+                     <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
+                  ) : (
+                    <>
+                      <div className="absolute left-4 bg-white rounded-full p-0.5 shadow-sm group-hover:scale-105 transition-transform duration-200">
+                        <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24">
+                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.16C1.43 8.55 1 10.22 1 12s.43 3.45 1.16 4.93l3.68-2.84z" fill="#FBBC05"/>
+                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.16 7.07l3.68 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                      </div>
+                      Continue with Google
+                    </>
+                  )}
                 </button>
-              </form>
+
+                <div className="flex items-center gap-4 my-2 opacity-60">
+                  <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent to-neutral-700"></div>
+                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">or email</span>
+                  <div className="flex-1 h-[1px] bg-gradient-to-l from-transparent to-neutral-700"></div>
+                </div>
+
+                <form onSubmit={(e) => {
+                     e.preventDefault();
+                     setIsAuthenticating(true);
+                     setTimeout(() => { setIsAuthenticated(true); setShowAuthModal(false); setIsAuthenticating(false); toast.success("Welcome back!"); }, 1500);
+                }} className="flex flex-col gap-3">
+                  <input
+                    type="email"
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Email address"
+                    className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3.5 text-[14px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-sans"
+                    disabled={isAuthenticating}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3.5 text-[14px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-sans"
+                    disabled={isAuthenticating}
+                  />
+                  
+                  <button
+                    type="submit"
+                    disabled={isAuthenticating || !password}
+                    className="w-full mt-2 bg-[#121212] hover:bg-[#1a1a1a] text-white font-medium text-[14px] py-3.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-neutral-800/80 shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
+                  >
+                    {isAuthenticating ? <Loader2 className="w-5 h-5 animate-spin text-neutral-500" /> : "Continue with Email"}
+                  </button>
+                </form>
+              </div>
+
+              <p className="mt-8 text-[11px] text-neutral-600 text-center leading-relaxed">
+                By continuing, you agree to Henry AI's <br/> <a href="#" className="underline hover:text-white transition-colors">Terms of Service</a> and <a href="#" className="underline hover:text-white transition-colors">Privacy Policy</a>.
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Modal Overlay */}
+      <AnimatePresence>
+        {showShareModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-neutral-800/80 rounded-3xl shadow-[0_0_80px_-15px_rgba(255,255,255,0.08)] flex flex-col relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              
+              <button 
+                onClick={() => setShowShareModal(false)} 
+                className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+
+              <div className="flex flex-col items-center mb-8">
+                <div className="w-14 h-14 bg-white rounded-[1.25rem] flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(255,255,255,0.15)] ring-1 ring-white/10">
+                  <RadioTower className="w-7 h-7 text-black" />
+                </div>
+                <h1 className="text-[22px] font-bold text-white tracking-tight">Share Live Session</h1>
+                <p className="text-[13px] text-neutral-400 mt-2 text-center leading-relaxed">
+                  Anyone with the link can view your real-time transcript and live summary.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-5 w-full">
+                <label className="flex items-center justify-between p-4 bg-[#111] border border-neutral-800 rounded-xl cursor-pointer hover:bg-[#151515] transition-colors">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-white">Require Password</span>
+                    <span className="text-xs text-neutral-500 mt-0.5">Protect this live session</span>
+                  </div>
+                  <div className={`relative w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${requirePassword ? 'bg-[#3498db]' : 'bg-neutral-700'}`}>
+                    <input 
+                      type="checkbox" 
+                      className="hidden" 
+                      checked={requirePassword} 
+                      onChange={(e) => setRequirePassword(e.target.checked)} 
+                    />
+                    <div className={`absolute left-1 bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${requirePassword ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                  </div>
+                </label>
+
+                <AnimatePresence>
+                  {requirePassword && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }} 
+                      animate={{ height: "auto", opacity: 1 }} 
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-[#0a0a0a] border border-neutral-800/80 rounded-xl p-4 flex flex-col gap-2">
+                        <span className="text-xs font-semibold text-neutral-500 uppercase tracking-widest">Generated Password</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-mono font-bold tracking-widest text-emerald-400">{generatedPassword}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <button
+                  onClick={confirmShareLive}
+                  disabled={isSharingLive}
+                  className="w-full mt-2 bg-white hover:bg-neutral-200 text-black font-semibold text-[14px] py-3.5 rounded-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
+                >
+                  {isSharingLive ? <Loader2 className="w-5 h-5 animate-spin" /> : "Start Live Sharing"}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -922,16 +1086,25 @@ date: ${note.date}
                             Recorded on {new Date(activeNote.date).toLocaleString()}
                           </p>
                         </div>
-                        <button
-                          onClick={() => {
-                            deleteSavedNote(activeNote.id);
-                            setSelectedNoteId(null);
-                          }}
-                          className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all"
-                          title="Delete note"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDownloadNote(activeNote)}
+                            className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-md transition-all"
+                            title="Download note"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              deleteSavedNote(activeNote.id);
+                              setSelectedNoteId(null);
+                            }}
+                            className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all"
+                            title="Delete note"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="flex-1 min-h-0 overflow-y-auto w-full">

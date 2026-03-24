@@ -181,6 +181,9 @@ export function useAudioRealtime() {
   }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries, selectedMicId]);
 
   const stopListening = useCallback(() => {
+    // 0. Guard against multiple calls
+    if (!useAppStore.getState().isListening) return;
+
     // 1. Auto-save before destroying the current streams, if we have content
     const currentItems = useAppStore.getState().transcriptItems;
     const currentSummaries = useAppStore.getState().summaries;
