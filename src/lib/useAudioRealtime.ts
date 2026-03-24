@@ -1,6 +1,4 @@
 import { useRef, useCallback } from 'react';
-import { useMutation } from 'convex/react';
-import { api } from '../../convex/_generated/api';
 import { useAppStore } from './store';
 
 export function useAudioRealtime() {
@@ -13,18 +11,15 @@ export function useAudioRealtime() {
   const {
     setIsListening,
     setIsConnecting,
-    isLive,
-    setLiveSessionId,
     addOrUpdateTranscriptItem,
     clearTranscript,
     selectedLanguages,
-    setSummaries,
+    transcriptItems,
+    summaries,
     addSavedNote,
+    setSummaries,
+    selectedMicId,
   } = useAppStore();
-
-  const createSession = useMutation(api.mutations.createSession);
-  const updateTranscript = useMutation(api.mutations.updateTranscript);
-  const endSession = useMutation(api.mutations.endSession);
 
   const connect = useCallback(async () => {
     try {
@@ -35,9 +30,11 @@ export function useAudioRealtime() {
       // 1. Get Microphone
       let micStream: MediaStream;
       try {
-        micStream = await navigator.mediaDevices.getUserMedia({
-          audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
-        });
+        const audioConstraints: any = { noiseSuppression: true, echoCancellation: true, autoGainControl: true };
+        if (selectedMicId && selectedMicId !== "default") {
+          audioConstraints.deviceId = { exact: selectedMicId };
+        }
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
         micStreamRef.current = micStream;
       } catch (e) {
         throw new Error("Microphone access is required.");
@@ -46,8 +43,11 @@ export function useAudioRealtime() {
       // 2. Ask user to share a screen/tab to capture System Audio
       let sysStream: MediaStream | null = null;
       try {
-        sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-        sysStreamRef.current = sysStream;
+        // Only attempt getDisplayMedia if it exists (not on mobile browsers)
+        if (navigator.mediaDevices.getDisplayMedia) {
+          sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+          sysStreamRef.current = sysStream;
+        }
       } catch (e) {
         console.warn("User cancelled system audio/screen share.");
       }
@@ -80,35 +80,21 @@ export function useAudioRealtime() {
       const mediaRecorder = new MediaRecorder(destination.stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = mediaRecorder;
 
-      if (useAppStore.getState().isLive) {
-        try {
-          // If Live is checked, hit Convex first
-          const hostId = "anonymous-host"; // Optional: grab from user session later
-          const sessionId = await createSession({
-            title: `Live Session ${new Date().toLocaleTimeString()}`,
-            hostId,
-          });
-          setLiveSessionId(sessionId);
-        } catch (err) {
-          console.error("Failed to create live session on Convex:", err);
-        }
-      }
-
-      let finalTokens: Record<string, unknown>[] = [];
+      let finalTokens: any[] = [];
 
       // Helper function to render tokens into readable text
-      const renderTokens = (final: Record<string, unknown>[], nonFinal: Record<string, unknown>[]) => {
-        const textParts = [];
+      const renderTokens = (final: any[], nonFinal: any[]) => {
+        let textParts = [];
         let currentSpeaker = null;
         let currentLanguage = null;
 
         for (const token of [...final, ...nonFinal]) {
-          let text = token.text as string;
+          let text = token.text;
 
           if (token.speaker && token.speaker !== currentSpeaker) {
             if (currentSpeaker !== null) textParts.push("\n\n");
             currentSpeaker = token.speaker;
-            currentLanguage = null;
+            currentLanguage = null; 
             textParts.push(`Speaker ${currentSpeaker}: `);
           }
 
@@ -157,7 +143,7 @@ export function useAudioRealtime() {
         }
 
         let nonFinalTokens: any[] = [];
-
+        
         if (res.tokens) {
           for (const token of res.tokens) {
             if (token.text) {
@@ -182,16 +168,6 @@ export function useAudioRealtime() {
           text: fullTranscript,
           isFinal: res.finished || false
         });
-
-        const liveSessionId = useAppStore.getState().liveSessionId;
-        if (liveSessionId) {
-          // Push to Convex
-          updateTranscript({
-            sessionId: liveSessionId as any,
-            transcript: fullTranscript,
-            hostId: "anonymous-host"
-          }).catch(err => console.error("Convex updateTranscript error:", err));
-        }
       };
 
       ws.onerror = (e) => console.error("WebSocket error:", e);
@@ -202,20 +178,20 @@ export function useAudioRealtime() {
       setIsConnecting(false);
       setIsListening(false);
     }
-  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries, createSession, updateTranscript, setLiveSessionId, isLive]);
+  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries, selectedMicId]);
 
   const stopListening = useCallback(() => {
     // 1. Auto-save before destroying the current streams, if we have content
     const currentItems = useAppStore.getState().transcriptItems;
     const currentSummaries = useAppStore.getState().summaries;
-
+    
     if (currentItems.length > 0) {
       const now = new Date();
-
+      
       // Determine a smart title based on summary or fall back to generic timestamp
       let title = "Meeting Note";
       const defaultLangSummary = currentSummaries['en'] || Object.values(currentSummaries)[0];
-
+      
       if (defaultLangSummary) {
         // Try getting the first line heading, e.g "# Discussion about X" -> "Discussion about X"
         const firstLine = defaultLangSummary.split('\\n')[0];
@@ -225,7 +201,7 @@ export function useAudioRealtime() {
           title = firstLine.substring(0, 50);
         }
       }
-
+      
       addSavedNote({
         id: crypto.randomUUID(),
         title: title || `Note ${now.toLocaleTimeString()}`,
@@ -244,15 +220,7 @@ export function useAudioRealtime() {
       setTimeout(() => wsRef.current?.close(), 500);
       wsRef.current = null;
     }
-
-    // Check if live session
-    const finalLiveId = useAppStore.getState().liveSessionId;
-    if (finalLiveId) {
-      endSession({ sessionId: finalLiveId as any, hostId: "anonymous-host" })
-        .catch(console.error);
-      useAppStore.getState().setLiveSessionId(null);
-    }
-
+    
     // Stop all tracks to remove the recording/sharing indicators from the browser tab
     if (micStreamRef.current) micStreamRef.current.getTracks().forEach(t => t.stop());
     if (sysStreamRef.current) sysStreamRef.current.getTracks().forEach(t => t.stop());
@@ -262,9 +230,9 @@ export function useAudioRealtime() {
 
     setIsListening(false);
     setIsConnecting(false);
-
+    
     // UI Cleanup to prep for next run is done on connect() so user can still see what they just recorded.
-  }, [setIsListening, setIsConnecting, addSavedNote, endSession]);
+  }, [setIsListening, setIsConnecting, addSavedNote]);
 
   return { connect, stopListening };
 }

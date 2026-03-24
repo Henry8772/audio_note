@@ -26,21 +26,21 @@ interface AppState {
   lastSummarizedTextLength: number; // For interim text changes
   selectedLanguages: string[]; // For STT
   translationLanguages: string[]; // For target LLM sumamries
-
+  selectedMicId: string; // For audio input device
+  
   // Auth State
   isAuthenticated: boolean;
+  freeUsageTime: number;
+  freeUsageExceeded: boolean;
 
   // Navigation State
   activeView: 'record' | 'notes';
-
-  isLive: boolean;
-  liveSessionId: string | null;
+  
+  // Persistence State
   savedNotes: SavedNote[];
 
   setIsListening: (val: boolean) => void;
   setIsConnecting: (val: boolean) => void;
-  setIsLive: (val: boolean) => void;
-  setLiveSessionId: (val: string | null) => void;
   addOrUpdateTranscriptItem: (item: TranscriptItem) => void;
   clearTranscript: () => void;
   setSummaries: (newSummaries: Record<string, string>) => void;
@@ -49,12 +49,17 @@ interface AppState {
   setLastSummarizedTextLength: (len: number) => void;
   setSelectedLanguages: (langs: string[]) => void;
   setTranslationLanguages: (langs: string[]) => void;
+  setSelectedMicId: (id: string) => void;
   setIsAuthenticated: (val: boolean) => void;
-
+  
   // New actions for notes and view
   setActiveView: (view: 'record' | 'notes') => void;
   addSavedNote: (note: SavedNote) => void;
   deleteSavedNote: (id: string) => void;
+
+  // Trial actions
+  incrementFreeUsageTime: (seconds: number) => void;
+  setFreeUsageExceeded: (val: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -62,8 +67,6 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       isListening: false,
       isConnecting: false,
-      isLive: false,
-      liveSessionId: null,
       transcriptItems: [],
       summaries: {},
       lastSummaryTime: 0,
@@ -71,18 +74,22 @@ export const useAppStore = create<AppState>()(
       lastSummarizedTextLength: 0,
       selectedLanguages: ["en", "zh"],
       translationLanguages: ["en"],
+      selectedMicId: "default",
       isAuthenticated: false,
+      freeUsageTime: 0,
+      freeUsageExceeded: false,
       activeView: 'record',
       savedNotes: [],
 
       setIsListening: (val) => set({ isListening: val }),
       setIsConnecting: (val) => set({ isConnecting: val }),
-      setIsLive: (val) => set({ isLive: val }),
-      setLiveSessionId: (val) => set({ liveSessionId: val }),
       setSelectedLanguages: (langs) => set({ selectedLanguages: langs }),
       setTranslationLanguages: (langs) => set({ translationLanguages: langs }),
+      setSelectedMicId: (id) => set({ selectedMicId: id }),
       setIsAuthenticated: (val) => set({ isAuthenticated: val }),
-
+      incrementFreeUsageTime: (seconds) => set((state) => ({ freeUsageTime: state.freeUsageTime + seconds })),
+      setFreeUsageExceeded: (val) => set({ freeUsageExceeded: val }),
+      
       addOrUpdateTranscriptItem: (item) => {
         set((state) => {
           const idx = state.transcriptItems.findIndex(i => i.id === item.id);
@@ -101,7 +108,7 @@ export const useAppStore = create<AppState>()(
       setLastSummaryTime: (time) => set({ lastSummaryTime: time }),
       setLastSummaryIndex: (idx) => set({ lastSummaryIndex: idx }),
       setLastSummarizedTextLength: (len) => set({ lastSummarizedTextLength: len }),
-
+      
       setActiveView: (view) => set({ activeView: view }),
       addSavedNote: (note) => set((state) => ({ savedNotes: [note, ...state.savedNotes] })),
       deleteSavedNote: (id) => set((state) => ({ savedNotes: state.savedNotes.filter(n => n.id !== id) })),
@@ -109,12 +116,15 @@ export const useAppStore = create<AppState>()(
     {
       name: 'audio-note-storage', // unique name for localStorage key
       storage: createJSONStorage(() => localStorage), // explicitly use localStorage
-      partialize: (state) => ({
+      partialize: (state) => ({ 
         // Only persist these fields.
         savedNotes: state.savedNotes,
         selectedLanguages: state.selectedLanguages,
         translationLanguages: state.translationLanguages,
-        isAuthenticated: state.isAuthenticated
+        selectedMicId: state.selectedMicId,
+        isAuthenticated: state.isAuthenticated,
+        freeUsageTime: state.freeUsageTime,
+        freeUsageExceeded: state.freeUsageExceeded
       }),
     }
   )
