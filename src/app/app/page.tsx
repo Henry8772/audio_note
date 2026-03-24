@@ -11,6 +11,7 @@ import { useAppStore, TranscriptItem, SavedNote } from "@/lib/store";
 import { useAudioRealtime } from "@/lib/useAudioRealtime";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { toast } from "sonner";
 
 const AVAILABLE_LANGUAGES = [
   { code: 'en', label: 'EN' },
@@ -114,7 +115,7 @@ export default function Home() {
         const mics = devices.filter(device => device.kind === 'audioinput');
         setAvailableMics(mics);
       } catch (err) {
-        console.error("Failed to fetch media devices:", err);
+        // Fallback or silent fail if no mics
       }
     }
     
@@ -179,9 +180,11 @@ export default function Home() {
             useAppStore.getState().setLastSummarizedTextLength(currentItems[currentItems.length - 1].text.length);
           }
         }
+      } else {
+        toast.error("Failed to generate summary from server.");
       }
     } catch (e) {
-      console.error("Failed to summarize", e);
+      toast.error("Network error while generating summary.");
     } finally {
       setIsSummarizing(false);
     }
@@ -190,7 +193,7 @@ export default function Home() {
 
   // Export Logic
   const handleExportNotes = async () => {
-    if (savedNotes.length === 0) return alert("No notes to export.");
+    if (savedNotes.length === 0) return toast.error("No notes to export.");
 
     const zip = new JSZip();
     const folder = zip.folder("AudioNotes_Export");
@@ -279,7 +282,7 @@ date: ${note.date}
         try {
           transcriptItems = JSON.parse(dataMatch[1].trim());
         } catch (err) {
-          console.error("Failed to parse transcript data for", title, err);
+          // silently handle
         }
       }
 
@@ -294,9 +297,9 @@ date: ${note.date}
     }
 
     if (importCount > 0) {
-      alert(`Successfully imported ${importCount} note(s)!`);
+      toast.success(`Successfully imported ${importCount} note(s)!`);
     } else {
-      alert("No valid new notes found to import.");
+      toast.error("No valid new notes found to import.");
     }
 
     // Reset input
@@ -307,12 +310,12 @@ date: ${note.date}
 
   const handleShareLive = async () => {
     if (!isListening) {
-      alert("Please start recording first to share the live session.");
+      toast.error("Please start recording first to share the live session.");
       return;
     }
     setShowShareModal(true);
-    // Generate an initial random 6 character alphanumeric password
-    setGeneratedPassword(Math.random().toString(36).slice(-6).toUpperCase());
+    // Secure cryptographic password generation
+    setGeneratedPassword(crypto.randomUUID().split('-')[0].substring(0, 6).toUpperCase());
     setRequirePassword(false);
   };
 
@@ -322,7 +325,7 @@ date: ${note.date}
       setShowShareModal(false);
       const hostId = crypto.randomUUID();
       const sessionId = await createSession({
-        title: "Henry's Live Meeting",
+        title: "Henry AI | Meeting",
         hostId: hostId,
         password: requirePassword ? generatedPassword : undefined
       });
@@ -331,13 +334,15 @@ date: ${note.date}
       
       const shareUrl = `${window.location.origin}/live/${sessionId}`;
       await navigator.clipboard.writeText(shareUrl);
-      alert(`Live link copied to clipboard!\n\n${requirePassword ? `Password: ${generatedPassword}\n\nAnyone with the link and password can view the live transcription.` : `Anyone with the link can view the live transcription.`}`);
+      toast.success("Live link copied to clipboard!", { 
+        description: requirePassword ? `Password: ${generatedPassword}. Anyone with the link & password can view.` : 'Anyone with the link can view.',
+        duration: 8000
+      });
       setIsSharingLive(false);
     } catch (e) {
-      console.error("Failed to create live session", e);
       setIsSharingLive(false);
       setShowShareModal(false);
-      alert("Failed to create share link.");
+      toast.error("Failed to create share link.");
     }
   };
 
@@ -352,7 +357,7 @@ date: ${note.date}
         sessionId: liveSessionId as any,
         transcript: transcriptText,
         hostId: liveSessionHostId
-      }).catch((err: any) => console.error("Failed to update transcript:", err));
+      }).catch((err: any) => toast.error("Connection issue: Live transcript may not be visible to viewers."));
     }
   }, [transcriptItems, liveSessionId, liveSessionHostId, updateTranscriptMutation]);
 
@@ -367,7 +372,7 @@ date: ${note.date}
         sessionId: liveSessionId as any,
         summary: summaryText,
         hostId: liveSessionHostId
-      }).catch((err: any) => console.error("Failed to update summary:", err));
+      }).catch((err: any) => toast.error("Connection issue: Live summary may not be visible."));
     }
   }, [summaries, liveSessionId, liveSessionHostId, updateSummaryMutation]);
 
@@ -456,8 +461,8 @@ date: ${note.date}
               <h1 className="text-xl font-semibold text-white mb-2 tracking-tight">Unlock Unlimited Access</h1>
               <p className="text-sm text-neutral-500 mb-8 text-center leading-relaxed">
                 {freeUsageExceeded 
-                  ? "Your 15-minute free preview has ended. Please enter your access token to continue." 
-                  : "Enter your special access token to unlock unlimited recordings and features."}
+                  ? "Your 15-minute free preview has ended. Please enter your license key to continue." 
+                  : "Enter your license key to unlock unlimited recordings and premium features."}
               </p>
               
               <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
@@ -497,7 +502,7 @@ date: ${note.date}
             <Mic className="w-3.5 h-3.5 text-black" />
           </div>
           <h1 className="text-[13px] font-semibold tracking-wide text-white hidden md:block whitespace-nowrap overflow-hidden">
-            Henry's Meeting
+            Henry AI | Meeting
           </h1>
         </div>
 
@@ -760,7 +765,7 @@ date: ${note.date}
                                 } else if (!isSelected && translationLanguages.length < 4) {
                                   setTranslationLanguages([...translationLanguages, lang.code]);
                                 } else if (!isSelected && translationLanguages.length >= 4) {
-                                  alert("Maximum of 4 translation languages allowed.");
+                                  toast.error("Maximum of 4 translation languages allowed.");
                                 }
                               }}
                               className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold transition-all ${isSelected
