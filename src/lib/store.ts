@@ -27,9 +27,12 @@ interface AppState {
   selectedLanguages: string[]; // For STT
   translationLanguages: string[]; // For target LLM sumamries
   selectedMicId: string; // For audio input device
+  isMicEnabled: boolean; // For toggling microphone
+  isSystemAudioEnabled: boolean; // For toggling system audio
   
   // Auth State
   isAuthenticated: boolean;
+  userEmail: string | null;
   freeUsageTime: number;
   freeUsageExceeded: boolean;
 
@@ -50,7 +53,10 @@ interface AppState {
   setSelectedLanguages: (langs: string[]) => void;
   setTranslationLanguages: (langs: string[]) => void;
   setSelectedMicId: (id: string) => void;
+  setIsMicEnabled: (val: boolean) => void;
+  setIsSystemAudioEnabled: (val: boolean) => void;
   setIsAuthenticated: (val: boolean) => void;
+  setUserEmail: (email: string | null) => void;
   
   // New actions for notes and view
   setActiveView: (view: 'record' | 'notes') => void;
@@ -80,7 +86,10 @@ export const useAppStore = create<AppState>()(
       selectedLanguages: ["en", "zh"],
       translationLanguages: ["en"],
       selectedMicId: "default",
+      isMicEnabled: true,
+      isSystemAudioEnabled: true,
       isAuthenticated: false,
+      userEmail: null,
       freeUsageTime: 0,
       freeUsageExceeded: false,
       activeView: 'record',
@@ -93,7 +102,10 @@ export const useAppStore = create<AppState>()(
       setSelectedLanguages: (langs) => set({ selectedLanguages: langs }),
       setTranslationLanguages: (langs) => set({ translationLanguages: langs }),
       setSelectedMicId: (id) => set({ selectedMicId: id }),
+      setIsMicEnabled: (val) => set({ isMicEnabled: val }),
+      setIsSystemAudioEnabled: (val) => set({ isSystemAudioEnabled: val }),
       setIsAuthenticated: (val) => set({ isAuthenticated: val }),
+      setUserEmail: (email) => set({ userEmail: email }),
       incrementFreeUsageTime: (seconds) => set((state) => ({ freeUsageTime: state.freeUsageTime + seconds })),
       setFreeUsageExceeded: (val) => set({ freeUsageExceeded: val }),
       setLiveSession: (id, hostId) => set({ liveSessionId: id, liveSessionHostId: hostId }),
@@ -130,7 +142,10 @@ export const useAppStore = create<AppState>()(
         selectedLanguages: state.selectedLanguages,
         translationLanguages: state.translationLanguages,
         selectedMicId: state.selectedMicId,
+        isMicEnabled: state.isMicEnabled,
+        isSystemAudioEnabled: state.isSystemAudioEnabled,
         isAuthenticated: state.isAuthenticated,
+        userEmail: state.userEmail,
         freeUsageTime: state.freeUsageTime,
         freeUsageExceeded: state.freeUsageExceeded
       }),

@@ -98,9 +98,8 @@ export default function LandingPage() {
     <div className="min-h-screen bg-black text-white font-sans selection:bg-neutral-800 selection:text-white overflow-hidden">
       {/* Navigation */}
       <nav
-        className={`fixed top-0 w-full z-50 transition-all duration-300 border-b ${
-          scrolled ? "bg-black/80 backdrop-blur-md border-neutral-800/80 py-3" : "bg-transparent border-transparent py-5"
-        }`}
+        className={`fixed top-0 w-full z-50 transition-all duration-300 border-b ${scrolled ? "bg-black/80 backdrop-blur-md border-neutral-800/80 py-3" : "bg-transparent border-transparent py-5"
+          }`}
       >
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -115,15 +114,12 @@ export default function LandingPage() {
             <a href="#waitlist" className="hover:text-white transition-colors">Waitlist</a>
           </div>
           <div className="flex flex-center gap-4">
-             <Link href="/app" className="hidden md:flex items-center text-sm font-medium text-neutral-300 hover:text-white transition-colors">
-               Sign In
-             </Link>
-             <Link
+            <Link
               href="/app"
               className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-neutral-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center gap-2"
-             >
-               Start for Free <ArrowRight className="w-4 h-4" />
-             </Link>
+            >
+              Start for Free <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </div>
       </nav>
@@ -132,32 +128,25 @@ export default function LandingPage() {
       <section className="relative pt-40 pb-20 md:pt-52 md:pb-32 px-6 flex flex-col items-center justify-center text-center">
         {/* Glow effect */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
-        
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative z-10 max-w-4xl mx-auto"
         >
-          <a href="https://midhand.ai.studio" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 mb-6 backdrop-blur-md">
+          <a href="https://henryai.studio" target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 mb-6 backdrop-blur-md">
             <div className="w-5 h-5 rounded bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-[0_0_10px_rgba(99,102,241,0.5)]">
-               <Layers className="w-3 h-3 text-white" />
+              <Layers className="w-3 h-3 text-white" />
             </div>
             <span className="text-sm font-medium text-neutral-300 group-hover:text-white transition-colors">
               A product by <span className="font-semibold text-white">AI Studio</span>
             </span>
             <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
           </a>
-          <br/>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-medium text-neutral-300 mb-8">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            Real-time AI Intelligence
-          </div>
+          <br />
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-8 leading-[1.1]">
-            Meetings, <br/>
+            Meetings, <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-300 to-neutral-600">
               perfectly captured.
             </span>
@@ -197,7 +186,7 @@ export default function LandingPage() {
           <div className="flex flex-col gap-32">
             {/* Feature 1 */}
             <div className="flex flex-col md:flex-row items-center gap-12 md:gap-20">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
@@ -207,17 +196,17 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.15)]">
                   <Mic className="w-8 h-8 text-blue-400" />
                 </div>
-                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Real-time <br/>Transcription</h3>
+                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Real-time <br />Transcription</h3>
                 <p className="text-neutral-400 leading-relaxed text-lg font-light">
                   Flawless precision as they speak. Our ultra-low latency model captures every word immediately without lag, so you can stay entirely focused on the conversation.
                 </p>
                 <div className="pt-4">
-                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
-                     <CheckCircle2 className="w-4 h-4 text-blue-500" /> Ultra-low latency
-                   </div>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
+                    <CheckCircle2 className="w-4 h-4 text-blue-500" /> Ultra-low latency
+                  </div>
                 </div>
               </motion.div>
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.9, rotateY: 10 }}
                 whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
@@ -231,7 +220,7 @@ export default function LandingPage() {
                     <Play className="w-8 h-8 ml-1 fill-current" />
                   </div>
                   <div className="absolute bottom-6 left-8">
-                     <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
+                    <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
                   </div>
                 </div>
               </motion.div>
@@ -239,7 +228,7 @@ export default function LandingPage() {
 
             {/* Feature 2 */}
             <div className="flex flex-col md:flex-row-reverse items-center gap-12 md:gap-20">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: 50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
@@ -249,17 +238,17 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center border border-purple-500/20 shadow-[0_0_30px_rgba(168,85,247,0.15)]">
                   <Globe className="w-8 h-8 text-purple-400" />
                 </div>
-                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Live <br/>Translation</h3>
+                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Live <br />Translation</h3>
                 <p className="text-neutral-400 leading-relaxed text-lg font-light">
                   Break language barriers instantly. Speak in English and have everyone read in Spanish, French, Chinese, or Japanese in real-time.
                 </p>
                 <div className="pt-4">
-                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
-                     <CheckCircle2 className="w-4 h-4 text-purple-500" /> 50+ Languages Supported
-                   </div>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
+                    <CheckCircle2 className="w-4 h-4 text-purple-500" /> 50+ Languages Supported
+                  </div>
                 </div>
               </motion.div>
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.9, rotateY: -10 }}
                 whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
@@ -272,7 +261,7 @@ export default function LandingPage() {
                     <Play className="w-8 h-8 ml-1 fill-current" />
                   </div>
                   <div className="absolute bottom-6 right-8 text-right">
-                     <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
+                    <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
                   </div>
                 </div>
               </motion.div>
@@ -280,7 +269,7 @@ export default function LandingPage() {
 
             {/* Feature 3 */}
             <div className="flex flex-col md:flex-row items-center gap-12 md:gap-20">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
@@ -290,17 +279,17 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
                   <Share2 className="w-8 h-8 text-emerald-400" />
                 </div>
-                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Live Meeting <br/>Session</h3>
+                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Live Meeting <br />Session</h3>
                 <p className="text-neutral-400 leading-relaxed text-lg font-light">
                   Open a session, share the unique link, and let participants read the transcription stream live from their own devices across the globe.
                 </p>
                 <div className="pt-4">
-                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
-                     <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Seamless Synchronization
-                   </div>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Seamless Synchronization
+                  </div>
                 </div>
               </motion.div>
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.9, rotateY: 10 }}
                 whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
@@ -313,7 +302,7 @@ export default function LandingPage() {
                     <Play className="w-8 h-8 ml-1 fill-current" />
                   </div>
                   <div className="absolute bottom-6 left-8">
-                     <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
+                    <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
                   </div>
                 </div>
               </motion.div>
@@ -325,7 +314,7 @@ export default function LandingPage() {
       {/* Interactive Live Demo */}
       <section id="demo" className="py-24 md:py-32 px-6 relative">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none" />
-        
+
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row items-center gap-16">
             <div className="flex-1">
@@ -333,24 +322,23 @@ export default function LandingPage() {
               <p className="text-neutral-400 text-lg leading-relaxed mb-6">
                 Don&apos;t just take our word for it. Press the button and say a few words. You&apos;ll see the transcription stream instantly using the exact same technology underneath the hood.
               </p>
-              
+
               <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium">
                 <Lock className="w-4 h-4" />
                 Demo is automatically limited to a 15-second recording.
               </div>
-              
+
               <button
                 onClick={toggleDemo}
                 disabled={isConnecting || demoFinished}
-                className={`flex items-center justify-center gap-3 px-6 py-4 rounded-full font-semibold text-base transition-all duration-300 w-full sm:w-auto shadow-sm ${
-                  demoFinished
-                    ? "bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700"
-                    : isConnecting
+                className={`flex items-center justify-center gap-3 px-6 py-4 rounded-full font-semibold text-base transition-all duration-300 w-full sm:w-auto shadow-sm ${demoFinished
+                  ? "bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700"
+                  : isConnecting
                     ? "bg-neutral-900 border border-neutral-800 text-neutral-400 cursor-not-allowed"
                     : isListening
                       ? "bg-[#111] text-red-400 border border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.15)]"
                       : "bg-white text-black hover:bg-neutral-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-                }`}
+                  }`}
               >
                 {demoFinished ? (
                   <>Demo Complete. Sign Up.</>
@@ -379,7 +367,7 @@ export default function LandingPage() {
               </div>
 
               {/* Demo Transcript Window */}
-              <div 
+              <div
                 ref={demoTranscriptRef}
                 className="flex-1 p-6 overflow-y-auto w-full relative h-[350px]"
               >
@@ -402,15 +390,14 @@ export default function LandingPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         key={item.id + idx}
-                        className={`p-4 rounded-2xl border flex flex-col gap-1.5 shadow-sm max-w-[85%] ${
-                          item.role === 'user' 
-                            ? 'bg-[#151515] border-neutral-800/80 self-end ml-auto' 
-                            : 'bg-[#0f172a]/40 border-blue-900/30 self-start'
-                        }`}
+                        className={`p-4 rounded-2xl border flex flex-col gap-1.5 shadow-sm max-w-[85%] ${item.role === 'user'
+                          ? 'bg-[#151515] border-neutral-800/80 self-end ml-auto'
+                          : 'bg-[#0f172a]/40 border-blue-900/30 self-start'
+                          }`}
                       >
-                         <p className={`text-sm leading-relaxed ${item.isFinal ? 'text-white' : 'text-neutral-400 italic'}`}>
-                           {item.text}
-                         </p>
+                        <p className={`text-sm leading-relaxed ${item.isFinal ? 'text-white' : 'text-neutral-400 italic'}`}>
+                          {item.text}
+                        </p>
                       </motion.div>
                     ))}
                     {demoFinished && transcriptItems.length > 0 && (
@@ -419,16 +406,16 @@ export default function LandingPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="p-6 rounded-2xl border border-blue-500/20 bg-blue-500/5 text-center my-6"
                       >
-                         <p className="text-sm font-medium text-neutral-200 mb-2">Live Demo Session Finished</p>
-                         <p className="text-xs text-neutral-400 mb-4">You&apos;ve reached the 15-second preview limit.</p>
-                         <Link href="/app" className="inline-block bg-white text-black text-xs font-semibold px-4 py-2 rounded-full hover:bg-neutral-200 transition-colors">
-                           Unlock Unlimited Access
-                         </Link>
+                        <p className="text-sm font-medium text-neutral-200 mb-2">Live Demo Session Finished</p>
+                        <p className="text-xs text-neutral-400 mb-4">You&apos;ve reached the 15-second preview limit.</p>
+                        <Link href="/app" className="inline-block bg-white text-black text-xs font-semibold px-4 py-2 rounded-full hover:bg-neutral-200 transition-colors">
+                          Unlock Unlimited Access
+                        </Link>
                       </motion.div>
                     )}
                   </div>
                 )}
-                
+
                 {isListening && (
                   <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-neutral-800 text-[10px] font-medium text-blue-400">
@@ -453,63 +440,63 @@ export default function LandingPage() {
 
       {/* Waitlist Section */}
       <section id="waitlist" className="py-24 md:py-32 px-6 bg-[#050505] border-t border-neutral-900">
-         <div className="max-w-4xl mx-auto">
-           <div className="text-center mb-12">
-             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-medium text-blue-400 mb-8">
-               Closed Beta
-             </div>
-             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Join the Waitlist</h2>
-             <p className="text-neutral-400 max-w-xl mx-auto text-lg leading-relaxed">
-               Henry&apos;s Meeting is currently in private beta. Skip the line by joining our exclusive waitlist, or try the 15-minute free preview right now.
-             </p>
-           </div>
-           
-           <div className="bg-[#0a0a0a] rounded-3xl p-8 md:p-12 border border-neutral-800 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center gap-8">
-             {/* Glow */}
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
-             
-             <div className="flex-1 relative z-10 w-full text-center md:text-left">
-               <h3 className="text-2xl font-semibold text-white mb-2">Get Early Access</h3>
-               <p className="text-neutral-400 text-sm">We&apos;ll notify you the moment a spot opens up.</p>
-             </div>
-             
-             <div className="flex-1 relative z-10 w-full">
-               <form 
-                 onSubmit={handleJoinWaitlist} 
-                 className="flex flex-col sm:flex-row gap-3"
-               >
-                 <input 
-                   type="email" 
-                   required
-                   value={waitlistEmail}
-                   onChange={(e) => setWaitlistEmail(e.target.value)}
-                   disabled={waitlistStatus === 'loading' || waitlistStatus === 'success'}
-                   placeholder="Enter your email..." 
-                   className="flex-1 bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-sans disabled:opacity-50"
-                 />
-                 <button 
-                   type="submit" 
-                   disabled={waitlistStatus === 'loading' || waitlistStatus === 'success'}
-                   className="bg-white text-black font-semibold text-sm px-6 py-3 rounded-xl hover:bg-neutral-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] whitespace-nowrap disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2 min-w-[140px]"
-                 >
-                   {waitlistStatus === 'loading' ? (
-                     <><Loader2 className="w-4 h-4 animate-spin" /> Joining...</>
-                   ) : waitlistStatus === 'success' ? (
-                     <><CheckCircle2 className="w-4 h-4" /> Joined!</>
-                   ) : (
-                     "Join Waitlist"
-                   )}
-                 </button>
-               </form>
-               {waitlistStatus === 'error' && (
-                 <p className="text-red-400 text-xs mt-3 text-left animate-in slide-in-from-top-1 opacity-100">{waitlistError}</p>
-               )}
-               {waitlistStatus === 'success' && (
-                 <p className="text-green-400 text-xs mt-3 text-left animate-in slide-in-from-top-1 opacity-100">Thanks for joining! We'll be in touch soon.</p>
-               )}
-             </div>
-           </div>
-         </div>
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-medium text-blue-400 mb-8">
+              Closed Beta
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Join the Waitlist</h2>
+            <p className="text-neutral-400 max-w-xl mx-auto text-lg leading-relaxed">
+              Henry&apos;s Meeting is currently in private beta. Skip the line by joining our exclusive waitlist, or try the 15-minute free preview right now.
+            </p>
+          </div>
+
+          <div className="bg-[#0a0a0a] rounded-3xl p-8 md:p-12 border border-neutral-800 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center gap-8">
+            {/* Glow */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
+
+            <div className="flex-1 relative z-10 w-full text-center md:text-left">
+              <h3 className="text-2xl font-semibold text-white mb-2">Get Early Access</h3>
+              <p className="text-neutral-400 text-sm">We&apos;ll notify you the moment a spot opens up.</p>
+            </div>
+
+            <div className="flex-1 relative z-10 w-full">
+              <form
+                onSubmit={handleJoinWaitlist}
+                className="flex flex-col sm:flex-row gap-3"
+              >
+                <input
+                  type="email"
+                  required
+                  value={waitlistEmail}
+                  onChange={(e) => setWaitlistEmail(e.target.value)}
+                  disabled={waitlistStatus === 'loading' || waitlistStatus === 'success'}
+                  placeholder="Enter your email..."
+                  className="flex-1 bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-sans disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={waitlistStatus === 'loading' || waitlistStatus === 'success'}
+                  className="bg-white text-black font-semibold text-sm px-6 py-3 rounded-xl hover:bg-neutral-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] whitespace-nowrap disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2 min-w-[140px]"
+                >
+                  {waitlistStatus === 'loading' ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Joining...</>
+                  ) : waitlistStatus === 'success' ? (
+                    <><CheckCircle2 className="w-4 h-4" /> Joined!</>
+                  ) : (
+                    "Join Waitlist"
+                  )}
+                </button>
+              </form>
+              {waitlistStatus === 'error' && (
+                <p className="text-red-400 text-xs mt-3 text-left animate-in slide-in-from-top-1 opacity-100">{waitlistError}</p>
+              )}
+              {waitlistStatus === 'success' && (
+                <p className="text-green-400 text-xs mt-3 text-left animate-in slide-in-from-top-1 opacity-100">Thanks for joining! We'll be in touch soon.</p>
+              )}
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Footer */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download } from "lucide-react";
+import { Mic, MicOff, Monitor, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,6 +9,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useAppStore, TranscriptItem, SavedNote } from "@/lib/store";
 import { useAudioRealtime } from "@/lib/useAudioRealtime";
+import { createClient } from "@/utils/supabase/client";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -46,6 +47,8 @@ export default function Home() {
     addSavedNote,
     isAuthenticated,
     setIsAuthenticated,
+    userEmail,
+    setUserEmail,
     selectedMicId,
     setSelectedMicId,
     freeUsageTime,
@@ -54,7 +57,11 @@ export default function Home() {
     setFreeUsageExceeded,
     liveSessionId,
     liveSessionHostId,
-    setLiveSession
+    setLiveSession,
+    isMicEnabled,
+    setIsMicEnabled,
+    isSystemAudioEnabled,
+    setIsSystemAudioEnabled,
   } = useAppStore();
 
   const createSession = useMutation(api.mutations.createSession);
@@ -73,10 +80,45 @@ export default function Home() {
   const [isSaved, setIsSaved] = useState(false);
 
   // Auth State
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
+
+  const supabase = createClient();
+
+  // Sync Supabase Auth State
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setIsAuthenticated(true);
+        setUserEmail(session.user.email || null);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setIsAuthenticated(true);
+        setUserEmail(session.user.email || null);
+      } else {
+        setIsAuthenticated(false);
+        setUserEmail(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth, setIsAuthenticated, setUserEmail]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setIsAuthenticated(false);
+    setUserEmail(null);
+    toast.success("Signed out successfully");
+  };
 
   // Free Usage Tracker (15 mins = 900 seconds)
   useEffect(() => {
@@ -409,27 +451,58 @@ date: ${note.date}
     }
   }, [isListening, liveSessionId, liveSessionHostId, endSession, setLiveSession]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password) return;
+    if (!email || !password) {
+      setAuthError('Please enter both email and password.');
+      return;
+    }
     setIsAuthenticating(true);
     setAuthError('');
     try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setIsAuthenticated(true);
-        setShowAuthModal(false);
+      if (authMode === 'signup') {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        if (data.user) {
+          setIsAuthenticated(true);
+          setShowAuthModal(false);
+          toast.success("Account created successfully!");
+        }
       } else {
-        setAuthError(data.error || 'Authentication failed');
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        if (data.user) {
+          setIsAuthenticated(true);
+          setShowAuthModal(false);
+          toast.success("Welcome back!");
+        }
       }
-    } catch (err) {
-      setAuthError('Network error connecting to auth server.');
+    } catch (err: any) {
+      setAuthError(err.message || 'Authentication failed');
     } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsAuthenticating(true);
+    setAuthError('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/app`
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setAuthError(err.message || 'Google login failed');
       setIsAuthenticating(false);
     }
   };
@@ -504,13 +577,25 @@ date: ${note.date}
               </div>
               
               <div className="w-full flex flex-col gap-4">
+                {/* Auth Mode Toggle */}
+                <div className="flex bg-[#111] p-1 rounded-lg border border-neutral-800">
+                  <button
+                    onClick={() => { setAuthMode('signup'); setAuthError(''); }}
+                    className={`flex-1 py-1.5 text-[13px] font-medium rounded-md transition-all ${authMode === 'signup' ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                  >
+                    Sign Up
+                  </button>
+                  <button
+                    onClick={() => { setAuthMode('signin'); setAuthError(''); }}
+                    className={`flex-1 py-1.5 text-[13px] font-medium rounded-md transition-all ${authMode === 'signin' ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                  >
+                    Sign In
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={(e) => {
-                     e.preventDefault();
-                     setIsAuthenticating(true);
-                     setTimeout(() => { setIsAuthenticated(true); setShowAuthModal(false); setIsAuthenticating(false); toast.success("Welcome back!"); }, 1500);
-                  }}
+                  onClick={handleGoogleLogin}
                   disabled={isAuthenticating}
                   className="w-full relative group bg-white hover:bg-neutral-100 text-black font-semibold text-[14px] py-3.5 rounded-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-sm"
                 >
@@ -537,33 +622,39 @@ date: ${note.date}
                   <div className="flex-1 h-[1px] bg-gradient-to-l from-transparent to-neutral-700"></div>
                 </div>
 
-                <form onSubmit={(e) => {
-                     e.preventDefault();
-                     setIsAuthenticating(true);
-                     setTimeout(() => { setIsAuthenticated(true); setShowAuthModal(false); setIsAuthenticating(false); toast.success("Welcome back!"); }, 1500);
-                }} className="flex flex-col gap-3">
+                <form onSubmit={handleAuth} className="flex flex-col gap-3">
                   <input
                     type="email"
                     required
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
                     placeholder="Email address"
                     className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3.5 text-[14px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-sans"
                     disabled={isAuthenticating}
                   />
                   <input
                     type="password"
-                    placeholder="Password"
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Password (min 6 characters)"
+                    minLength={6}
                     className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3.5 text-[14px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-sans"
                     disabled={isAuthenticating}
                   />
                   
+                  {authError && (
+                    <div className="text-red-400 text-xs font-medium px-2 py-1 bg-red-400/10 rounded-md border border-red-400/20 text-center animate-in fade-in slide-in-from-top-1">
+                      {authError}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    disabled={isAuthenticating || !password}
-                    className="w-full mt-2 bg-[#121212] hover:bg-[#1a1a1a] text-white font-medium text-[14px] py-3.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-neutral-800/80 shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
+                    disabled={isAuthenticating || !email || !password}
+                    className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-[14px] py-3.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-blue-500/80 shadow-[0_2px_10px_rgba(37,99,235,0.3)]"
                   >
-                    {isAuthenticating ? <Loader2 className="w-5 h-5 animate-spin text-neutral-500" /> : "Continue with Email"}
+                    {isAuthenticating ? <Loader2 className="w-5 h-5 animate-spin text-white/70" /> : (authMode === 'signup' ? "Create Account" : "Sign In with Email")}
                   </button>
                 </form>
               </div>
@@ -698,10 +789,33 @@ date: ${note.date}
           </button>
         </nav>
 
-        <div className="mt-auto px-2">
+        <div className="mt-auto px-2 mb-4 space-y-4">
           <p className="hidden md:block text-[10px] text-neutral-600 leading-tight">
             Data is securely saved locally to your device.
           </p>
+          
+          <AnimatePresence>
+            {isAuthenticated && userEmail && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                className="flex items-center justify-between bg-[#111] p-2.5 rounded-lg border border-neutral-800"
+              >
+                <div className="flex-1 min-w-0 mr-2 hidden md:block">
+                  <p className="text-[11px] font-medium text-neutral-300 truncate" title={userEmail}>
+                    {userEmail}
+                  </p>
+                  <p className="text-[9px] text-neutral-500 uppercase tracking-widest mt-0.5">Pro User</p>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-neutral-800 rounded-md transition-all shrink-0"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </aside>
 
@@ -777,19 +891,49 @@ date: ${note.date}
               <div className="flex-1 grid grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1 min-h-0 relative">
                 {/* Floating Dock */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-neutral-800/80 shadow-[0_0_40px_rgba(0,0,0,0.8)]">
-                  <select 
-                    value={selectedMicId} 
-                    onChange={(e) => setSelectedMicId(e.target.value)}
-                    className="bg-neutral-900 text-[11px] text-neutral-300 font-medium px-2 sm:px-3 py-2 rounded-xl border border-neutral-700 outline-none hover:text-white transition-colors max-w-[90px] sm:max-w-[150px] truncate cursor-pointer appearance-none"
-                    disabled={isListening}
-                  >
-                    <option value="default">Default Mic</option>
-                    {availableMics.map(mic => (
-                      <option key={mic.deviceId} value={mic.deviceId}>
-                        {mic.label || `Mic (${mic.deviceId.slice(0, 4)})`}
-                      </option>
-                    ))}
-                  </select>
+
+                  <div className="flex items-center gap-1 bg-[#111] p-1 rounded-xl border border-neutral-800 hidden sm:flex">
+                    <button
+                      onClick={() => setIsMicEnabled(!isMicEnabled)}
+                      disabled={isListening}
+                      className={`flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        isMicEnabled 
+                          ? 'bg-neutral-800 text-white shadow-sm' 
+                          : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900'
+                      } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {isMicEnabled ? <Mic className="w-3.5 h-3.5 mr-1.5" /> : <MicOff className="w-3.5 h-3.5 mr-1.5" />} 
+                      Mic
+                    </button>
+                    <button
+                      onClick={() => setIsSystemAudioEnabled(!isSystemAudioEnabled)}
+                      disabled={isListening}
+                      className={`flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        isSystemAudioEnabled 
+                          ? 'bg-neutral-800 text-white shadow-sm' 
+                          : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900'
+                      } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <Monitor className="w-3.5 h-3.5 mr-1.5" /> 
+                      System Audio
+                    </button>
+                  </div>
+
+                  {isMicEnabled && (
+                    <select 
+                      value={selectedMicId} 
+                      onChange={(e) => setSelectedMicId(e.target.value)}
+                      className="bg-neutral-900 text-[11px] text-neutral-300 font-medium px-2 sm:px-3 py-2 rounded-xl border border-neutral-700 outline-none hover:text-white transition-colors max-w-[90px] sm:max-w-[150px] truncate cursor-pointer appearance-none"
+                      disabled={isListening}
+                    >
+                      <option value="default">Default Mic</option>
+                      {availableMics.map(mic => (
+                        <option key={mic.deviceId} value={mic.deviceId}>
+                          {mic.label || `Mic (${mic.deviceId.slice(0, 4)})`}
+                        </option>
+                      ))}
+                    </select>
+                  )}
 
                   <button
                     onClick={handleShareLive}
@@ -819,8 +963,12 @@ date: ${note.date}
 
                   <button
                     onClick={() => {
-                      if (!isAuthenticated && freeUsageExceeded) {
+                      if (!isAuthenticated) {
                         setShowAuthModal(true);
+                        return;
+                      }
+                      if (!isListening && !isMicEnabled && !isSystemAudioEnabled) {
+                        toast.error("Please enable Mic or System Audio to start.");
                         return;
                       }
                       isListening ? stopListening() : connect();

@@ -19,37 +19,47 @@ export function useAudioRealtime() {
     addSavedNote,
     setSummaries,
     selectedMicId,
+    isMicEnabled,
+    isSystemAudioEnabled,
   } = useAppStore();
 
   const connect = useCallback(async () => {
     try {
+      if (!isMicEnabled && !isSystemAudioEnabled) {
+        throw new Error("Please enable at least one audio source (Microphone or System Audio).");
+      }
+
       setIsConnecting(true);
       clearTranscript();
       setSummaries({});
 
       // 1. Get Microphone
-      let micStream: MediaStream;
-      try {
-        const audioConstraints: any = { noiseSuppression: true, echoCancellation: true, autoGainControl: true };
-        if (selectedMicId && selectedMicId !== "default") {
-          audioConstraints.deviceId = { exact: selectedMicId };
+      let micStream: MediaStream | null = null;
+      if (isMicEnabled) {
+        try {
+          const audioConstraints: any = { noiseSuppression: true, echoCancellation: true, autoGainControl: true };
+          if (selectedMicId && selectedMicId !== "default") {
+            audioConstraints.deviceId = { exact: selectedMicId };
+          }
+          micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+          micStreamRef.current = micStream;
+        } catch (e) {
+          throw new Error("Microphone access is required or was denied.");
         }
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-        micStreamRef.current = micStream;
-      } catch (e) {
-        throw new Error("Microphone access is required.");
       }
 
       // 2. Ask user to share a screen/tab to capture System Audio
       let sysStream: MediaStream | null = null;
-      try {
-        // Only attempt getDisplayMedia if it exists (not on mobile browsers)
-        if (navigator.mediaDevices.getDisplayMedia) {
-          sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-          sysStreamRef.current = sysStream;
+      if (isSystemAudioEnabled) {
+        try {
+          // Only attempt getDisplayMedia if it exists (not on mobile browsers)
+          if (navigator.mediaDevices.getDisplayMedia) {
+            sysStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            sysStreamRef.current = sysStream;
+          }
+        } catch (e) {
+          console.warn("User cancelled system audio/screen share.");
         }
-      } catch (e) {
-        console.warn("User cancelled system audio/screen share.");
       }
 
       // 3. Mix the audio streams using Web Audio API
@@ -57,8 +67,10 @@ export function useAudioRealtime() {
       audioCtxRef.current = audioCtx;
       const destination = audioCtx.createMediaStreamDestination();
 
-      const micSource = audioCtx.createMediaStreamSource(micStream);
-      micSource.connect(destination);
+      if (micStream) {
+        const micSource = audioCtx.createMediaStreamSource(micStream);
+        micSource.connect(destination);
+      }
 
       if (sysStream && sysStream.getAudioTracks().length > 0) {
         const sysAudioStream = new MediaStream(sysStream.getAudioTracks());
@@ -173,12 +185,13 @@ export function useAudioRealtime() {
       ws.onerror = (e) => console.error("WebSocket error:", e);
       ws.onclose = () => stopListening();
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Connection error:", err);
+      alert(err.message || "Failed to start listening.");
       setIsConnecting(false);
       setIsListening(false);
     }
-  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries, selectedMicId]);
+  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries, selectedMicId, isMicEnabled, isSystemAudioEnabled]);
 
   const stopListening = useCallback(() => {
     // 0. Guard against multiple calls
