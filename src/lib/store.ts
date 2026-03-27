@@ -33,6 +33,7 @@ interface AppState {
   // Auth State
   isAuthenticated: boolean;
   userEmail: string | null;
+  tier: 'free' | 'pro';
   freeUsageTime: number;
   freeUsageExceeded: boolean;
 
@@ -57,6 +58,7 @@ interface AppState {
   setIsSystemAudioEnabled: (val: boolean) => void;
   setIsAuthenticated: (val: boolean) => void;
   setUserEmail: (email: string | null) => void;
+  setTier: (tier: 'free' | 'pro') => void;
   
   // New actions for notes and view
   setActiveView: (view: 'record' | 'notes') => void;
@@ -90,6 +92,7 @@ export const useAppStore = create<AppState>()(
       isSystemAudioEnabled: true,
       isAuthenticated: false,
       userEmail: null,
+      tier: 'free',
       freeUsageTime: 0,
       freeUsageExceeded: false,
       activeView: 'record',
@@ -106,6 +109,7 @@ export const useAppStore = create<AppState>()(
       setIsSystemAudioEnabled: (val) => set({ isSystemAudioEnabled: val }),
       setIsAuthenticated: (val) => set({ isAuthenticated: val }),
       setUserEmail: (email) => set({ userEmail: email }),
+      setTier: (tier) => set({ tier }),
       incrementFreeUsageTime: (seconds) => set((state) => ({ freeUsageTime: state.freeUsageTime + seconds })),
       setFreeUsageExceeded: (val) => set({ freeUsageExceeded: val }),
       setLiveSession: (id, hostId) => set({ liveSessionId: id, liveSessionHostId: hostId }),

@@ -51,10 +51,11 @@ export default function Home() {
     setUserEmail,
     selectedMicId,
     setSelectedMicId,
-    freeUsageTime,
     freeUsageExceeded,
     incrementFreeUsageTime,
     setFreeUsageExceeded,
+    tier,
+    setTier,
     liveSessionId,
     liveSessionHostId,
     setLiveSession,
@@ -87,7 +88,27 @@ export default function Home() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
 
+  // Upgrade State
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [proPassword, setProPassword] = useState('');
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState('');
+
   const supabase = createClient();
+
+  const fetchUsage = async () => {
+    try {
+      const res = await fetch('/api/user/usage');
+      if (res.ok) {
+        const data = await res.json();
+        setTier(data.tier);
+        useAppStore.setState({ freeUsageTime: data.usageSeconds });
+        if (data.tier === 'free' && data.usageSeconds >= 900) {
+          setFreeUsageExceeded(true);
+        }
+      }
+    } catch (e) {}
+  };
 
   // Sync Supabase Auth State
   useEffect(() => {
@@ -95,6 +116,7 @@ export default function Home() {
       if (session?.user) {
         setIsAuthenticated(true);
         setUserEmail(session.user.email || null);
+        fetchUsage();
       }
     });
 
@@ -104,14 +126,16 @@ export default function Home() {
       if (session?.user) {
         setIsAuthenticated(true);
         setUserEmail(session.user.email || null);
+        fetchUsage();
       } else {
         setIsAuthenticated(false);
         setUserEmail(null);
+        setTier('free');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth, setIsAuthenticated, setUserEmail]);
+  }, [supabase.auth, setIsAuthenticated, setUserEmail, setTier]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -123,21 +147,42 @@ export default function Home() {
   // Free Usage Tracker (15 mins = 900 seconds)
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isListening && !isAuthenticated) {
-      interval = setInterval(() => {
-        const state = useAppStore.getState();
-        if (state.freeUsageTime >= 900) {
-          state.setFreeUsageExceeded(true);
-          stopListening();
-          setShowAuthModal(true);
-          clearInterval(interval);
-        } else {
-          state.incrementFreeUsageTime(1);
-        }
-      }, 1000);
+    if (isListening) {
+      if (!isAuthenticated || tier === 'free') {
+        interval = setInterval(() => {
+          const state = useAppStore.getState();
+          if (state.freeUsageTime >= 900) {
+            state.setFreeUsageExceeded(true);
+            stopListening();
+            if (!isAuthenticated) {
+              setShowAuthModal(true);
+            } else {
+              setShowUpgradeModal(true);
+            }
+            clearInterval(interval);
+          } else {
+            state.incrementFreeUsageTime(1);
+          }
+        }, 1000);
+      }
     }
     return () => clearInterval(interval);
-  }, [isListening, isAuthenticated, stopListening]);
+  }, [isListening, isAuthenticated, tier, stopListening]);
+
+  // Periodic usage sync (10s intervals)
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isListening && isAuthenticated && tier === 'free') {
+      interval = setInterval(() => {
+        fetch('/api/user/usage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: 10 })
+        }).catch(console.error);
+      }, 10000);
+    }
+    return () => clearInterval(interval);
+  }, [isListening, isAuthenticated, tier]);
 
   // Handle forcing modal if exceeded on load
   useEffect(() => {
@@ -507,6 +552,32 @@ date: ${note.date}
     }
   };
 
+  const handleUpgrade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpgrading(true);
+    setUpgradeError('');
+    try {
+      const res = await fetch('/api/user/upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: proPassword })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTier('pro');
+        setFreeUsageExceeded(false);
+        setShowUpgradeModal(false);
+        toast.success("Account upgraded to Pro!");
+      } else {
+        setUpgradeError(data.error || 'Failed to upgrade');
+      }
+    } catch (e: any) {
+      setUpgradeError(e.message);
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
   const handleManualSave = () => {
     if (transcriptItems.length === 0) return;
     const now = new Date();
@@ -633,6 +704,77 @@ date: ${note.date}
               <p className="mt-8 text-[11px] text-neutral-600 text-center leading-relaxed">
                 By continuing, you agree to Henry AI's <br/> <a href="#" className="underline hover:text-white transition-colors">Terms of Service</a> and <a href="#" className="underline hover:text-white transition-colors">Privacy Policy</a>.
               </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Upgrade Pro Modal Overlay */}
+      <AnimatePresence>
+        {showUpgradeModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-amber-500/20 rounded-3xl shadow-[0_0_80px_-15px_rgba(245,158,11,0.08)] flex flex-col relative overflow-hidden"
+            >
+              {/* Subtle top glare */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
+
+              {!freeUsageExceeded && (
+                <button 
+                  onClick={() => setShowUpgradeModal(false)} 
+                  className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
+                >
+                  <span className="sr-only">Close</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              )}
+
+              <div className="flex flex-col items-center mb-8">
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-200 to-amber-500 rounded-[1.25rem] flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/20">
+                  <Lock className="w-7 h-7 text-amber-950" />
+                </div>
+                <h1 className="text-[22px] font-bold text-white tracking-tight">Upgrade to Pro</h1>
+                <p className="text-[13px] text-neutral-400 mt-2 text-center leading-relaxed">
+                  {freeUsageExceeded 
+                    ? "Your 15-minute free transcription has ended. Enter the Pro password to continue." 
+                    : "Enter the Pro password to unlock unlimited meeting intelligence."}
+                </p>
+              </div>
+              
+              <div className="w-full flex flex-col gap-4">
+                <form onSubmit={handleUpgrade} className="flex flex-col gap-3">
+                  <input
+                    type="password"
+                    required
+                    value={proPassword}
+                    onChange={e => setProPassword(e.target.value)}
+                    placeholder="Enter Pro Password"
+                    className="w-full bg-[#0a0a0a] border border-neutral-800 focus:border-amber-500/50 rounded-xl px-4 py-3.5 text-[14px] text-white placeholder:text-neutral-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all font-sans"
+                    disabled={isUpgrading}
+                  />
+                  
+                  {upgradeError && (
+                    <div className="text-red-400 text-xs font-medium px-2 py-1 bg-red-400/10 rounded-md border border-red-400/20 text-center animate-in fade-in slide-in-from-top-1">
+                      {upgradeError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isUpgrading || !proPassword}
+                    className="w-full mt-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-medium text-[14px] py-3.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-amber-400/50 shadow-[0_2px_15px_rgba(245,158,11,0.25)]"
+                  >
+                    {isUpgrading ? <Loader2 className="w-5 h-5 animate-spin text-white/70" /> : "Unlock Unlimited"}
+                  </button>
+                </form>
+              </div>
             </motion.div>
           </motion.div>
         )}
