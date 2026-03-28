@@ -5,6 +5,7 @@ export const createSession = mutation({
     args: {
         title: v.string(),
         hostId: v.string(),
+        password: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         return await ctx.db.insert("sessions", {
@@ -13,6 +14,7 @@ export const createSession = mutation({
             summary: "",
             isActive: true,
             hostId: args.hostId,
+            password: args.password,
         });
     },
 });
