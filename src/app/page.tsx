@@ -106,7 +106,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.2)]">
               <Mic className="w-4 h-4 text-black" />
             </div>
-            <span className="font-semibold tracking-wide text-sm">Henry&apos;s Meeting</span>
+            <span className="font-semibold tracking-wide text-sm">Meeting by HenryAI</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
@@ -140,7 +140,7 @@ export default function LandingPage() {
               <Layers className="w-3 h-3 text-white" />
             </div>
             <span className="text-sm font-medium text-neutral-300 group-hover:text-white transition-colors">
-              A product by <span className="font-semibold text-white">AI Studio</span>
+              A product by <span className="font-semibold text-white">HenryAI Studio</span>
             </span>
             <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
           </a>
@@ -152,7 +152,7 @@ export default function LandingPage() {
             </span>
           </h1>
           <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
-            Stay entirely present. Henry&apos;s Meeting transcribes, translates, and summarizes your live sessions across multiple languages, in real-time.
+            Stay entirely present. Meeting by HenryAI transcribes, translates, and summarizes your live sessions across multiple languages, in real-time.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -447,7 +447,7 @@ export default function LandingPage() {
             </div>
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Join the Waitlist</h2>
             <p className="text-neutral-400 max-w-xl mx-auto text-lg leading-relaxed">
-              Henry&apos;s Meeting is currently in private beta. Skip the line by joining our exclusive waitlist, or try the 15-minute free preview right now.
+              Meeting by HenryAI is currently in private beta. Skip the line by joining our exclusive waitlist, or try the 15-minute free preview right now.
             </p>
           </div>
 
@@ -504,7 +504,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <Mic className="w-5 h-5 text-neutral-500" />
-            <span className="font-semibold text-neutral-500 tracking-wide text-sm">Henry&apos;s Meeting</span>
+            <span className="font-semibold text-neutral-500 tracking-wide text-sm">Meeting by HenryAI</span>
           </div>
           <p className="text-sm text-neutral-600">
             &copy; {new Date().getFullYear()} meeting.henryai.studio. All rights reserved.

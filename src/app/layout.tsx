@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Henry AI | Meeting",
+  title: "Meeting by HenryAI",
   description: "AI-powered live meeting transcription and intelligence.",
 };
 

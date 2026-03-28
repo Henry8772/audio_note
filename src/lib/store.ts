@@ -8,6 +8,12 @@ export interface TranscriptItem {
   isFinal: boolean;
 }
 
+export interface WorkspaceView {
+  id: string;
+  type: 'ai_notes' | 'live_translation' | 'manual_note';
+  language?: string;
+}
+
 export interface SavedNote {
   id: string;
   title: string;
@@ -20,12 +26,14 @@ interface AppState {
   isListening: boolean;
   isConnecting: boolean;
   transcriptItems: TranscriptItem[];
+  translatedTranscriptItems: TranscriptItem[];
   summaries: Record<string, string>;
   lastSummaryTime: number;
   lastSummaryIndex: number; // For rolling context
   lastSummarizedTextLength: number; // For interim text changes
-  selectedLanguages: string[]; // For STT
-  translationLanguages: string[]; // For target LLM sumamries
+  selectedLanguages: string[]; // For STT hints
+  workspaceViews: WorkspaceView[];
+  translationLanguages: string[]; // Maintaining for backward compatibility or simple tracking
   selectedMicId: string; // For audio input device
   isMicEnabled: boolean; // For toggling microphone
   isSystemAudioEnabled: boolean; // For toggling system audio
@@ -46,12 +54,17 @@ interface AppState {
   setIsListening: (val: boolean) => void;
   setIsConnecting: (val: boolean) => void;
   addOrUpdateTranscriptItem: (item: TranscriptItem) => void;
+  addOrUpdateTranslatedItem: (item: TranscriptItem) => void;
   clearTranscript: () => void;
   setSummaries: (newSummaries: Record<string, string>) => void;
   setLastSummaryTime: (time: number) => void;
   setLastSummaryIndex: (idx: number) => void;
   setLastSummarizedTextLength: (len: number) => void;
   setSelectedLanguages: (langs: string[]) => void;
+  setWorkspaceViews: (views: WorkspaceView[]) => void;
+  addWorkspaceView: (view: WorkspaceView) => void;
+  removeWorkspaceView: (id: string) => void;
+  updateWorkspaceView: (id: string, updates: Partial<WorkspaceView>) => void;
   setTranslationLanguages: (langs: string[]) => void;
   setSelectedMicId: (id: string) => void;
   setIsMicEnabled: (val: boolean) => void;
@@ -81,11 +94,16 @@ export const useAppStore = create<AppState>()(
       isListening: false,
       isConnecting: false,
       transcriptItems: [],
+      translatedTranscriptItems: [],
       summaries: {},
       lastSummaryTime: 0,
       lastSummaryIndex: 0,
       lastSummarizedTextLength: 0,
       selectedLanguages: ["en", "zh"],
+      workspaceViews: [
+        { id: '1', type: 'ai_notes', language: 'en' },
+        { id: '2', type: 'live_translation', language: 'zh' }
+      ],
       translationLanguages: ["en"],
       selectedMicId: "default",
       isMicEnabled: true,
@@ -103,6 +121,14 @@ export const useAppStore = create<AppState>()(
       setIsListening: (val) => set({ isListening: val }),
       setIsConnecting: (val) => set({ isConnecting: val }),
       setSelectedLanguages: (langs) => set({ selectedLanguages: langs }),
+      
+      setWorkspaceViews: (views) => set({ workspaceViews: views }),
+      addWorkspaceView: (view) => set((state) => ({ workspaceViews: [...state.workspaceViews, view] })),
+      removeWorkspaceView: (id) => set((state) => ({ workspaceViews: state.workspaceViews.filter(v => v.id !== id) })),
+      updateWorkspaceView: (id, updates) => set((state) => ({
+        workspaceViews: state.workspaceViews.map(v => v.id === id ? { ...v, ...updates } : v)
+      })),
+
       setTranslationLanguages: (langs) => set({ translationLanguages: langs }),
       setSelectedMicId: (id) => set({ selectedMicId: id }),
       setIsMicEnabled: (val) => set({ isMicEnabled: val }),
@@ -127,7 +153,20 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      clearTranscript: () => set({ transcriptItems: [], summaries: {}, lastSummaryIndex: 0, lastSummarizedTextLength: 0 }),
+      addOrUpdateTranslatedItem: (item) => {
+        set((state) => {
+          const idx = state.translatedTranscriptItems.findIndex(i => i.id === item.id);
+          if (idx >= 0) {
+            const newItems = [...state.translatedTranscriptItems];
+            newItems[idx] = item;
+            return { translatedTranscriptItems: newItems };
+          } else {
+            return { translatedTranscriptItems: [...state.translatedTranscriptItems, item] };
+          }
+        });
+      },
+
+      clearTranscript: () => set({ transcriptItems: [], translatedTranscriptItems: [], summaries: {}, lastSummaryIndex: 0, lastSummarizedTextLength: 0 }),
       setSummaries: (newSummaries) => set({ summaries: newSummaries }),
       setLastSummaryTime: (time) => set({ lastSummaryTime: time }),
       setLastSummaryIndex: (idx) => set({ lastSummaryIndex: idx }),
@@ -144,6 +183,7 @@ export const useAppStore = create<AppState>()(
         // Only persist these fields.
         savedNotes: state.savedNotes,
         selectedLanguages: state.selectedLanguages,
+        workspaceViews: state.workspaceViews,
         translationLanguages: state.translationLanguages,
         selectedMicId: state.selectedMicId,
         isMicEnabled: state.isMicEnabled,

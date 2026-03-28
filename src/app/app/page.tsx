@@ -38,6 +38,11 @@ export default function Home() {
     setLastSummarizedTextLength,
     selectedLanguages,
     setSelectedLanguages,
+    workspaceViews,
+    setWorkspaceViews,
+    addWorkspaceView,
+    removeWorkspaceView,
+    translatedTranscriptItems,
     translationLanguages,
     setTranslationLanguages,
     activeView,
@@ -77,8 +82,51 @@ export default function Home() {
 
   const { connect, stopListening } = useAudioRealtime();
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
+  const translatedTranscriptContainerRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
+  const [showAddViewModal, setShowAddViewModal] = useState(false);
+
+  useEffect(() => {
+    if (!activeWorkspaceId && workspaceViews.length > 0) {
+      setActiveWorkspaceId(workspaceViews[0].id);
+    } else if (activeWorkspaceId && !workspaceViews.find(v => v.id === activeWorkspaceId)) {
+      if (workspaceViews.length > 0) setActiveWorkspaceId(workspaceViews[0].id);
+      else setActiveWorkspaceId(null);
+    }
+  }, [workspaceViews, activeWorkspaceId]);
+
+  // Migrate legacy AI Notes targeting non-English languages to Live Translation
+  useEffect(() => {
+    const hasLegacyViews = workspaceViews.some(v => v.type === 'ai_notes' && v.language !== 'en');
+    if (hasLegacyViews && setWorkspaceViews) {
+      const migratedViews = workspaceViews.map(v => 
+        (v.type === 'ai_notes' && v.language !== 'en')
+          ? { ...v, type: 'live_translation' as 'live_translation' }
+          : v
+      );
+      // Remove duplicates for live_translation (since only 1 is supported)
+      const liveTranslations = migratedViews.filter(v => v.type === 'live_translation');
+      let finalViews = migratedViews;
+      if (liveTranslations.length > 1) {
+         const firstId = liveTranslations[0].id;
+         finalViews = migratedViews.filter(v => v.type !== 'live_translation' || v.id === firstId);
+      }
+      setWorkspaceViews(finalViews);
+    }
+  }, [workspaceViews, setWorkspaceViews]);
+  
+  // Auto-scroll translated transcript
+  useEffect(() => {
+    if (translatedTranscriptContainerRef.current) {
+      const container = translatedTranscriptContainerRef.current;
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+      if (isAtBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  }, [translatedTranscriptItems, activeView]);
 
   // Auth State
   const [email, setEmail] = useState('');
@@ -220,7 +268,11 @@ export default function Home() {
   // Auto-scroll transcript
   useEffect(() => {
     if (transcriptContainerRef.current) {
-      transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
+      const container = transcriptContainerRef.current;
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+      if (isAtBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
     }
   }, [transcriptItems, activeView]);
 
@@ -232,7 +284,7 @@ export default function Home() {
     const currentItems = state.transcriptItems;
     let currentIndex = state.lastSummaryIndex;
     const currentSummaries = state.summaries;
-    const currentTranslationLanguages = state.translationLanguages;
+      const currentTranslationLanguages = workspaceViews.filter(v => v.type === 'ai_notes' && v.language).map(v => v.language);
 
     let lastItemHasGrown = false;
     if (currentItems.length > 0 && currentItems.length === currentIndex) {
@@ -875,6 +927,89 @@ date: ${note.date}
         )}
       </AnimatePresence>
 
+      {/* Add View Modal Overlay */}
+      <AnimatePresence>
+        {showAddViewModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-neutral-800/80 rounded-3xl shadow-[0_0_80px_-15px_rgba(255,255,255,0.08)] flex flex-col relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+              <button 
+                onClick={() => setShowAddViewModal(false)} 
+                className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+
+              <div className="flex flex-col items-center mb-6 relative">
+                <h1 className="text-xl font-semibold text-white tracking-tight">Add Workspace View</h1>
+                <p className="text-[14px] text-neutral-400 mt-2 text-center leading-relaxed">
+                  Choose a widget to add to your right panel.
+                </p>
+              </div>
+              
+              <div className="w-full flex flex-col gap-4">
+                <div className="space-y-3">
+                  <h3 className="text-xs font-semibold text-neutral-500 tracking-wider uppercase mb-1">AI Notes</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {AVAILABLE_LANGUAGES.filter(l => l.code === 'en').map(lang => (
+                      <button
+                        key={`ainote-${lang.code}`}
+                        onClick={() => {
+                          const id = crypto.randomUUID();
+                          addWorkspaceView({ id: id, type: 'ai_notes', language: lang.code });
+                          setActiveWorkspaceId(id);
+                          setShowAddViewModal(false);
+                        }}
+                        className="py-2.5 px-2 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex flex-col items-center gap-1 group"
+                      >
+                        <FileText className="w-4 h-4 text-neutral-500 group-hover:text-blue-400" />
+                        <span className="text-[10px] font-medium uppercase">{lang.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3 mt-2">
+                  <h3 className="text-xs font-semibold text-neutral-500 tracking-wider uppercase mb-1">Real-Time Translation</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {AVAILABLE_LANGUAGES.filter(l => l.code !== 'en').map(lang => (
+                      <button
+                        key={`live-${lang.code}`}
+                        onClick={() => {
+                          // Prevent multiple live translation views due to soniox constraint
+                          if (workspaceViews.some(v => v.type === 'live_translation')) {
+                             toast.error("Only 1 Live Translation view is supported per session.");
+                             return;
+                          }
+                          const id = crypto.randomUUID();
+                          addWorkspaceView({ id: id, type: 'live_translation', language: lang.code });
+                          setActiveWorkspaceId(id);
+                          setShowAddViewModal(false);
+                        }}
+                        className="py-2.5 px-2 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex flex-col items-center gap-1 group"
+                      >
+                        <RadioTower className="w-4 h-4 text-neutral-500 group-hover:text-amber-400" />
+                        <span className="text-[10px] font-medium uppercase">{lang.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Share Modal Overlay */}
       <AnimatePresence>
         {showShareModal && (
@@ -1210,7 +1345,7 @@ date: ${note.date}
 
                 {/* Left Pane: Raw Transcript */}
                 <div className="border-r border-neutral-800 flex flex-col h-full bg-[#0a0a0a] min-h-0 overflow-hidden relative">
-                  <div className="h-10 border-b border-neutral-800/80 flex items-center px-6 shrink-0 bg-black">
+                  <div className="min-h-[48px] border-b border-neutral-800/80 flex items-center px-6 shrink-0 bg-black">
                     <h2 className="text-[10px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2">
                       <List className="w-3.5 h-3.5" /> Live Transcript
                     </h2>
@@ -1235,12 +1370,12 @@ date: ${note.date}
                               ? 'bg-[#151515] border-neutral-800/80' 
                               : 'bg-[#0f172a]/40 border-blue-900/30'
                           }`}>
-                            <span className={`text-[9px] font-bold uppercase tracking-widest ${item.role === 'user' ? 'text-neutral-500' : 'text-blue-500'}`}>
-                              {item.role === 'user' ? 'Speaker' : 'AI Assistant'}
+                            <span className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${item.role === 'user' ? 'text-neutral-500' : 'text-blue-500'}`}>
+                              {item.role === 'user' ? 'Live Room' : 'AI Assistant'}
                             </span>
-                            <p className={`text-[14px] leading-relaxed whitespace-pre-wrap break-words font-medium ${item.isFinal ? 'text-white' : 'text-neutral-400 italic'}`}>
-                              {item.text}
-                            </p>
+                            <div className={`text-[17px] leading-[1.8] whitespace-pre-wrap break-words font-medium prose prose-invert prose-p:my-2 prose-p:leading-[1.8] max-w-none ${item.isFinal ? 'text-white' : 'text-neutral-400 italic'}`}>
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
+                            </div>
                           </div>
                         </motion.div>
                       ))
@@ -1248,18 +1383,48 @@ date: ${note.date}
                   </div>
                 </div>
 
-                {/* Right Pane: Multi-Lang Grid */}
-                <div className="flex flex-col h-full bg-black relative min-h-0 overflow-hidden">
-                  <div className="min-h-[48px] py-2 border-b border-neutral-800/80 flex flex-wrap items-center justify-between px-4 sm:px-6 shrink-0 bg-black gap-y-3">
-                    <h2 className="text-[10px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2 w-full sm:w-auto">
-                      <FileText className="w-3.5 h-3.5" /> AI Notes
-                    </h2>
+                {/* Right Pane: Customizable Workspace Tabs */}
+                <div className="flex flex-col h-full bg-black relative min-h-0 overflow-hidden border-l border-neutral-800/80">
+                  <div className="min-h-[48px] border-b border-neutral-800/80 flex items-center justify-between px-2 sm:px-4 bg-[#0a0a0a]">
+                    
+                    {/* Tabs / Headers */}
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-2">
+                       {workspaceViews.map((view) => (
+                          <button
+                            key={view.id}
+                            onClick={() => setActiveWorkspaceId(view.id)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors whitespace-nowrap border ${activeWorkspaceId === view.id ? 'bg-neutral-800 border-neutral-700 text-white shadow-sm' : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900'}`}
+                          >
+                            {view.type === 'ai_notes' ? <FileText className="w-3.5 h-3.5" /> : <RadioTower className="w-3.5 h-3.5" />}
+                            {view.type === 'ai_notes' ? 'AI NOTES' : 'REAL-TIME TRANSLATION'}
+                            <span className="opacity-50 text-[9px] uppercase">[{view.language}]</span>
+                            
+                            {workspaceViews.length > 1 && (
+                              <div onClick={(e) => { 
+                                e.stopPropagation(); 
+                                removeWorkspaceView(view.id); 
+                              }} className="opacity-60 hover:opacity-100 hover:text-red-400 ml-1 transition-all">
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                              </div>
+                            )}
+                          </button>
+                       ))}
 
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                       <button
+                         onClick={() => setShowAddViewModal(true)}
+                         className="flex items-center justify-center w-7 h-7 rounded-sm bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 hover:border-neutral-700 transition-all ml-1 shrink-0"
+                         title="Add Workspace View"
+                       >
+                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                       </button>
+                    </div>
+
+                    {/* Action buttons (Save, Take Note) */}
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-4">
                       <button
                         onClick={handleManualSave}
                         disabled={transcriptItems.length === 0}
-                        className="text-[10px] px-2.5 py-1.5 rounded-md border border-neutral-700 bg-[#111] text-white hover:bg-neutral-800 transition-colors flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-[10px] px-2.5 py-1.5 rounded-md border border-neutral-700 bg-[#111] text-white hover:bg-neutral-800 transition-colors flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hidden sm:flex"
                         title="Save Note to Library"
                       >
                        {isSaved ? <Save className="w-3 h-3 text-emerald-400" /> : <Save className="w-3 h-3 text-neutral-400" />}
@@ -1279,75 +1444,60 @@ date: ${note.date}
                         {isSummarizing ? <Loader2 className="w-3 h-3 animate-spin text-neutral-400" /> : <FileText className="w-3 h-3 text-neutral-400" />}
                         {isSummarizing ? "VALIDATING" : "TAKE NOTE"}
                       </button>
-
-                      <div className="flex items-center gap-1 ml-2">
-                        <span className="text-[9px] text-neutral-600 uppercase tracking-widest font-semibold mr-1">TGT LANGS:</span>
-                        {AVAILABLE_LANGUAGES.map(lang => {
-                          const isSelected = translationLanguages.includes(lang.code);
-                          return (
-                            <button
-                              key={lang.code}
-                              disabled={isListening}
-                              onClick={() => {
-                                if (isSelected && translationLanguages.length > 1) {
-                                  setTranslationLanguages(translationLanguages.filter(c => c !== lang.code));
-                                } else if (!isSelected && translationLanguages.length < 4) {
-                                  setTranslationLanguages([...translationLanguages, lang.code]);
-                                } else if (!isSelected && translationLanguages.length >= 4) {
-                                  toast.error("Maximum of 4 translation languages allowed.");
-                                }
-                              }}
-                              className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-bold transition-all ${isSelected
-                                  ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
-                                } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                              {lang.label}
-                            </button>
-                          )
-                        })}
-                      </div>
                     </div>
                   </div>
 
-                  {/* Dynamic Grid Rendering */}
-                  <div className={`flex-1 min-h-0 overflow-hidden grid ${translationLanguages.length === 1 ? 'grid-cols-1 grid-rows-1' :
-                      translationLanguages.length === 2 ? 'grid-cols-2 grid-rows-1 divide-x divide-neutral-800' :
-                        translationLanguages.length === 3 ? 'grid-cols-2 grid-rows-2 divide-x divide-y divide-neutral-800' :
-                          'grid-cols-2 grid-rows-2 divide-x divide-y divide-neutral-800'
-                    }`}>
-                    {translationLanguages.map((lang, index) => {
-                      const summaryText = summaries[lang];
-                      const isThreePanes = translationLanguages.length === 3;
-                      const spanClass = (isThreePanes && index === 0) ? 'col-span-2' : 'col-span-1';
+                  {/* Rendering Active View Payload */}
+                  <div className="flex-1 min-h-0 overflow-hidden relative">
+                    {workspaceViews.map((view) => {
+                       if (view.id !== activeWorkspaceId) return null;
 
-                      return (
-                        <div key={lang} className={`flex flex-col h-full overflow-hidden ${spanClass}`}>
-                          {/* Sub Header for Panes > 1 */}
-                          {translationLanguages.length > 1 && (
-                            <div className="h-7 bg-neutral-900/50 border-b border-neutral-800/50 flex items-center px-4 shrink-0 justify-between">
-                              <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
-                                {AVAILABLE_LANGUAGES.find(l => l.code === lang)?.label || lang}
-                              </span>
-                            </div>
-                          )}
+                       if (view.type === 'ai_notes') {
+                         const summaryText = summaries[view.language || 'en'];
+                         return (
+                           <div key={view.id} className="h-full flex flex-col p-6 pb-24 overflow-y-auto">
+                             {!summaryText ? (
+                               <div className="h-full flex flex-col items-center justify-center text-neutral-600 opacity-50">
+                                 <FileText className="w-8 h-8 mb-2" />
+                                 <p className="text-xs font-medium">Waiting for Summary</p>
+                               </div>
+                             ) : (
+                               <div className="prose prose-invert prose-neutral max-w-none prose-h1:text-[16px] prose-h1:font-bold prose-h1:tracking-tight prose-h1:text-white prose-h2:text-[14px] prose-h2:font-semibold prose-h2:text-neutral-100 prose-p:text-[13.5px] prose-p:leading-relaxed prose-p:text-neutral-200 prose-a:text-white prose-ul:text-[13.5px] prose-ul:text-neutral-200 prose-li:marker:text-neutral-600 font-medium tracking-wide">
+                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{summaryText}</ReactMarkdown>
+                               </div>
+                             )}
+                           </div>
+                         );
+                       }
+                       
+                       if (view.type === 'live_translation') {
+                         return (
+                           <div key={view.id} className="h-full flex flex-col pt-6 px-6 sm:px-8 pb-32 overflow-y-auto space-y-6" ref={translatedTranscriptContainerRef}>
+                             {translatedTranscriptItems.length === 0 ? (
+                               <div className="flex flex-col items-center justify-center h-full text-neutral-500 opacity-60">
+                                 <RadioTower className="w-8 h-8 mb-3 opacity-50" />
+                                 <p className="text-[13px]">Listening for translations...</p>
+                               </div>
+                             ) : (
+                               translatedTranscriptItems.map((item, index) => (
+                                 <div key={index} className="flex gap-4 group">
+                                   <div className="w-8 h-8 rounded-full bg-blue-500/10 shrink-0 flex items-center justify-center ring-1 ring-blue-500/20">
+                                     <RadioTower className="w-4 h-4 text-blue-400" />
+                                   </div>
+                                   <div className="font-medium text-[15px] leading-relaxed tracking-wide text-neutral-300">
+                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
+                                   </div>
+                                 </div>
+                               ))
+                             )}
+                           </div>
+                         );
+                       }
 
-                          <div className="flex-1 min-h-0 overflow-y-auto p-6 pb-24">
-                            {!summaryText ? (
-                              <div className="h-full flex flex-col items-center justify-center text-neutral-600 opacity-50">
-                                <FileText className="w-8 h-8 mb-2" />
-                                <p className="text-xs font-medium">Waiting</p>
-                              </div>
-                            ) : (
-                              <div className="prose prose-invert prose-neutral max-w-none prose-h1:text-[16px] prose-h1:font-bold prose-h1:tracking-tight prose-h1:text-white prose-h2:text-[14px] prose-h2:font-semibold prose-h2:text-neutral-100 prose-p:text-[13.5px] prose-p:leading-relaxed prose-p:text-neutral-200 prose-a:text-white prose-ul:text-[13.5px] prose-ul:text-neutral-200 prose-li:marker:text-neutral-600 font-medium tracking-wide">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{summaryText}</ReactMarkdown>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
+                       return null;
                     })}
                   </div>
+
                 </div>
               </div>
             </motion.div>
@@ -1474,25 +1624,27 @@ date: ${note.date}
 
                       <div className="flex-1 min-h-0 overflow-y-auto w-full">
                         {/* We will grid layout the exported notes if they span multiple langs */}
-                        <div className={`grid w-full min-h-full ${Object.keys(activeNote.summaries).length > 1 ? 'grid-cols-2 divide-x divide-neutral-800' : 'grid-cols-1'
-                          }`}>
-                          {Object.entries(activeNote.summaries).map(([lang, text]) => (
-                            <div key={lang} className="p-8 lg:p-12">
-                              {Object.keys(activeNote.summaries).length > 1 && (
-                                <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6">Translation: {lang}</h3>
-                              )}
-                              <div className="prose prose-invert prose-neutral max-w-none prose-h1:text-xl prose-h1:font-semibold prose-h1:text-neutral-100 prose-h2:text-lg prose-h2:font-medium prose-h2:text-neutral-200 prose-p:text-[14px] prose-p:leading-relaxed prose-p:text-neutral-300 prose-a:text-white prose-ul:text-[14px] prose-ul:text-neutral-300">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {text || "*Empty.*"}
-                                </ReactMarkdown>
+                        {Object.keys(activeNote.summaries).length > 0 && (
+                          <div className={`grid w-full min-h-full ${Object.keys(activeNote.summaries).length > 1 ? 'grid-cols-2 divide-x divide-neutral-800' : 'grid-cols-1'
+                            }`}>
+                            {Object.entries(activeNote.summaries).map(([lang, text]) => (
+                              <div key={lang} className="p-8 lg:p-12">
+                                {Object.keys(activeNote.summaries).length > 1 && (
+                                  <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6">Translation: {lang}</h3>
+                                )}
+                                <div className="prose prose-invert prose-neutral max-w-none prose-h1:text-xl prose-h1:font-semibold prose-h1:text-neutral-100 prose-h2:text-lg prose-h2:font-medium prose-h2:text-neutral-200 prose-p:text-[14px] prose-p:leading-relaxed prose-p:text-neutral-300 prose-a:text-white prose-ul:text-[14px] prose-ul:text-neutral-300">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {text || "*Empty.*"}
+                                  </ReactMarkdown>
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="max-w-4xl mx-auto p-8 lg:p-12">
                           {activeNote.transcriptItems.length > 0 && (
-                            <div className="mt-16 pt-8 border-t border-neutral-800/50">
+                            <div className={Object.keys(activeNote.summaries).length > 0 ? "mt-16 pt-8 border-t border-neutral-800/50" : ""}>
                               <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest mb-6 border-b border-neutral-800/40 pb-4">Raw Transcript Timeline</h3>
                               <div className="space-y-4">
                                 {activeNote.transcriptItems.map((item, idx) => (

@@ -12,8 +12,10 @@ export function useAudioRealtime() {
     setIsListening,
     setIsConnecting,
     addOrUpdateTranscriptItem,
+    addOrUpdateTranslatedItem,
     clearTranscript,
     selectedLanguages,
+    workspaceViews,
     transcriptItems,
     summaries,
     addSavedNote,
@@ -95,27 +97,26 @@ export function useAudioRealtime() {
       let finalTokens: any[] = [];
 
       // Helper function to render tokens into readable text
-      const renderTokens = (final: any[], nonFinal: any[]) => {
+      const renderTokens = (tokensList: any[]) => {
         let textParts = [];
         let currentSpeaker = null;
-        let currentLanguage = null;
 
-        for (const token of [...final, ...nonFinal]) {
+        for (const token of tokensList) {
           let text = token.text;
+
+          // Remove programmatic tags like <end> returned by Soniox
+          text = text.replace(/<[^>]+>/g, "");
 
           if (token.speaker && token.speaker !== currentSpeaker) {
             if (currentSpeaker !== null) textParts.push("\n\n");
             currentSpeaker = token.speaker;
-            currentLanguage = null; 
-            textParts.push(`Speaker ${currentSpeaker}: `);
-          }
-
-          if (token.language && token.language !== currentLanguage) {
-            currentLanguage = token.language;
-            textParts.push(`[${currentLanguage}] `);
+            // Bold the speaker name for readability
+            textParts.push(`**Speaker ${currentSpeaker}:** `);
+            // Trim leading space when starting a new speaker block
             text = text.trimStart();
           }
 
+          // We ignore token.language as requested, preventing [zh] labels
           textParts.push(text);
         }
         return textParts.join("");
@@ -125,8 +126,12 @@ export function useAudioRealtime() {
         setIsConnecting(false);
         setIsListening(true);
 
-        // Send Initial Soniox Config
-        ws.send(JSON.stringify({
+        const liveTranslationView = workspaceViews.find(v => v.type === 'live_translation');
+        const translationConfig = liveTranslationView && liveTranslationView.language 
+          ? { type: "one_way", target_language: liveTranslationView.language }
+          : undefined;
+
+        const configPayload: any = {
           api_key: apiKey,
           model: "stt-rt-v4",
           audio_format: "auto", // WebM is detected automatically
@@ -134,7 +139,14 @@ export function useAudioRealtime() {
           enable_language_identification: true,
           enable_speaker_diarization: true, // Will label Speaker 1, Speaker 2, etc.
           enable_endpoint_detection: true,
-        }));
+        };
+
+        if (translationConfig) {
+          configPayload.translation = translationConfig;
+        }
+
+        // Send Initial Soniox Config
+        ws.send(JSON.stringify(configPayload));
 
         // Tell the MediaRecorder to send a chunk of audio every 250 milliseconds
         mediaRecorder.start(250);
@@ -169,7 +181,12 @@ export function useAudioRealtime() {
         }
 
         // Generate the formatted transcript block
-        const fullTranscript = renderTokens(finalTokens, nonFinalTokens);
+        const allTokens = [...finalTokens, ...nonFinalTokens];
+        const originalTokens = allTokens.filter(t => !t.translation_status || t.translation_status === 'none' || t.translation_status === 'original');
+        const translatedTokens = allTokens.filter(t => t.translation_status === 'translation');
+
+        const fullTranscript = renderTokens(originalTokens);
+        const translatedTranscript = renderTokens(translatedTokens);
 
         // Update the UI
         // Note: We use a single ID here so the bubble continuously grows and updates 
@@ -180,6 +197,15 @@ export function useAudioRealtime() {
           text: fullTranscript,
           isFinal: res.finished || false
         });
+
+        if (translatedTokens.length > 0) {
+          addOrUpdateTranslatedItem({
+            id: "soniox-live-session-translated",
+            role: "user",
+            text: translatedTranscript,
+            isFinal: res.finished || false
+          });
+        }
       };
 
       ws.onerror = (e) => console.error("WebSocket error:", e);
@@ -191,7 +217,7 @@ export function useAudioRealtime() {
       setIsConnecting(false);
       setIsListening(false);
     }
-  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, setSummaries, selectedMicId, isMicEnabled, isSystemAudioEnabled]);
+  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, addOrUpdateTranslatedItem, clearTranscript, selectedLanguages, workspaceViews, setSummaries, selectedMicId, isMicEnabled, isSystemAudioEnabled]);
 
   const stopListening = useCallback(() => {
     // 0. Guard against multiple calls
