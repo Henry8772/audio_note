@@ -49,28 +49,37 @@ export async function POST(req: Request) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         
-        // Fetch the local user_id linked to this Stripe customer
-        const { data: userData, error: userError } = await supabaseAdmin
-          .from('users')
-          .select('id')
-          .eq('stripe_customer_id', subscription.customer)
-          .single();
+        let userId = subscription.metadata?.user_id;
 
-        if (userError) {
-          console.error('Error fetching user for subscription:', userError);
-          break;
+        if (!userId) {
+          // Fallback: Fetch the local user_id linked to this Stripe customer
+          const { data: userData, error: userError } = await supabaseAdmin
+            .from('users')
+            .select('id')
+            .eq('stripe_customer_id', subscription.customer)
+            .maybeSingle();
+
+          if (userError) {
+            console.error('Error fetching user for subscription:', userError);
+            break;
+          }
+          if (userData) {
+            userId = userData.id;
+          }
         }
 
-        if (userData) {
+        if (userId) {
           await supabaseAdmin
             .from('subscriptions')
             .upsert({
-              user_id: userData.id,
+              user_id: userId,
               stripe_subscription_id: subscription.id,
               status: subscription.status,
               price_id: subscription.items.data[0].price.id,
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end && !isNaN(Number(subscription.current_period_end)) ? Number(subscription.current_period_end) * 1000 : Date.now() + 2592000 * 1000).toISOString(),
             }, { onConflict: 'stripe_subscription_id' });
+        } else {
+          console.warn(`Could not resolve user_id for subscription ${subscription.id}`);
         }
         break;
       }
@@ -81,7 +90,7 @@ export async function POST(req: Request) {
           .from('subscriptions')
           .update({
             status: subscription.status,
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_end: new Date(subscription.current_period_end && !isNaN(Number(subscription.current_period_end)) ? Number(subscription.current_period_end) * 1000 : Date.now() + 2592000 * 1000).toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);
         break;

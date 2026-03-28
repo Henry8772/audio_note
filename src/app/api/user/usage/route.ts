@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const supabase = await createClient();
@@ -11,7 +13,23 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tier = user.user_metadata?.tier || 'free';
+    let tier = 'free';
+
+    const { data: subData } = await supabaseAdmin
+      .from('subscriptions')
+      .select('status, current_period_end')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (subData) {
+      const isActive = ['active', 'trialing'].includes(subData.status);
+      const isNotExpired = new Date(subData.current_period_end).getTime() > Date.now();
+      
+      if (isActive && isNotExpired) {
+        tier = 'pro';
+      }
+    }
 
     // Get usage from usage_logs
     const { data: usageData, error: usageError } = await supabaseAdmin

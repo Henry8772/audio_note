@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Monitor, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download, LogOut } from "lucide-react";
+import { Mic, MicOff, Monitor, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download, LogOut, Settings, Sparkles, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -90,9 +90,14 @@ export default function Home() {
 
   // Upgrade State
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalSource, setUpgradeModalSource] = useState<'limit' | 'manual'>('manual');
   const [proPassword, setProPassword] = useState('');
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState('');
+
+  // Settings State
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [isManagingBilling, setIsManagingBilling] = useState(false);
 
   const supabase = createClient();
 
@@ -157,6 +162,7 @@ export default function Home() {
             if (!isAuthenticated) {
               setShowAuthModal(true);
             } else {
+              setUpgradeModalSource('limit');
               setShowUpgradeModal(true);
             }
             clearInterval(interval);
@@ -557,24 +563,46 @@ date: ${note.date}
     setIsUpgrading(true);
     setUpgradeError('');
     try {
-      const res = await fetch('/api/user/upgrade', {
+      const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: proPassword })
+        body: JSON.stringify({ planId: 'pro' })
       });
+      
       const data = await res.json();
-      if (res.ok && data.success) {
-        setTier('pro');
-        setFreeUsageExceeded(false);
-        setShowUpgradeModal(false);
-        toast.success("Account upgraded to Pro!");
+      if (res.ok && data.url) {
+        window.location.href = data.url;
       } else {
-        setUpgradeError(data.error || 'Failed to upgrade');
+        setUpgradeError(data.error || 'Failed to create checkout session');
       }
     } catch (e: any) {
       setUpgradeError(e.message);
     } finally {
       setIsUpgrading(false);
+    }
+  };
+
+  const handleManageBilling = async () => {
+    if (tier === 'free') {
+      setShowSettingsModal(false);
+      setUpgradeModalSource('manual');
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    setIsManagingBilling(true);
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || 'Failed to open billing portal');
+      }
+    } catch (e: any) {
+      toast.error('Network error while opening portal');
+    } finally {
+      setIsManagingBilling(false);
     }
   };
 
@@ -736,44 +764,111 @@ date: ${note.date}
                 </button>
               )}
 
-              <div className="flex flex-col items-center mb-8">
-                <div className="w-14 h-14 bg-gradient-to-br from-amber-200 to-amber-500 rounded-[1.25rem] flex items-center justify-center mb-5 shadow-[0_0_20px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/20">
-                  <Lock className="w-7 h-7 text-amber-950" />
+              <div className="flex flex-col items-center mb-8 relative">
+                <div className="relative w-16 h-16 flex items-center justify-center mb-5">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/20 to-orange-500/20 rounded-full blur-xl animate-pulse" />
+                  <div className="relative w-full h-full bg-[#111] border border-white/10 rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-sm">
+                    <Sparkles className="w-8 h-8 text-amber-500" />
+                  </div>
                 </div>
-                <h1 className="text-[22px] font-bold text-white tracking-tight">Upgrade to Pro</h1>
-                <p className="text-[13px] text-neutral-400 mt-2 text-center leading-relaxed">
-                  {freeUsageExceeded 
-                    ? "Your 15-minute free transcription has ended. Enter the Pro password to continue." 
-                    : "Enter the Pro password to unlock unlimited meeting intelligence."}
+                <h1 className="text-2xl font-semibold text-white tracking-tight">Upgrade to Pro</h1>
+                <p className="text-[14px] text-neutral-400 mt-2.5 text-center leading-relaxed max-w-[280px]">
+                  {upgradeModalSource === 'limit' && freeUsageExceeded 
+                    ? "Your 15-minute free transcription has ended. Upgrade to Pro to continue recording." 
+                    : "Unlock unlimited meeting intelligence with Pro."}
                 </p>
               </div>
               
-              <div className="w-full flex flex-col gap-4">
+              <div className="w-full flex flex-col gap-5">
+                <div className="bg-[#111] border border-white/5 rounded-2xl p-4 space-y-3.5">
+                  <div className="flex items-center text-[13px] text-neutral-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-3 shrink-0" />
+                    <span>Unlimited recording & transcription</span>
+                  </div>
+                  <div className="flex items-center text-[13px] text-neutral-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-3 shrink-0" />
+                    <span>Advanced AI summary models (GPT-4o)</span>
+                  </div>
+                  <div className="flex items-center text-[13px] text-neutral-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-3 shrink-0" />
+                    <span>Priority secure data storage</span>
+                  </div>
+                </div>
+
                 <form onSubmit={handleUpgrade} className="flex flex-col gap-3">
-                  <input
-                    type="password"
-                    required
-                    value={proPassword}
-                    onChange={e => setProPassword(e.target.value)}
-                    placeholder="Enter Pro Password"
-                    className="w-full bg-[#0a0a0a] border border-neutral-800 focus:border-amber-500/50 rounded-xl px-4 py-3.5 text-[14px] text-white placeholder:text-neutral-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all font-sans"
-                    disabled={isUpgrading}
-                  />
-                  
                   {upgradeError && (
-                    <div className="text-red-400 text-xs font-medium px-2 py-1 bg-red-400/10 rounded-md border border-red-400/20 text-center animate-in fade-in slide-in-from-top-1">
+                    <div className="text-red-400 text-xs font-medium px-3 py-2 bg-red-400/10 rounded-xl border border-red-400/20 text-center animate-in fade-in slide-in-from-top-1">
                       {upgradeError}
                     </div>
                   )}
 
                   <button
                     type="submit"
-                    disabled={isUpgrading || !proPassword}
-                    className="w-full mt-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-medium text-[14px] py-3.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-amber-400/50 shadow-[0_2px_15px_rgba(245,158,11,0.25)]"
+                    disabled={isUpgrading}
+                    className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-[14px] font-medium rounded-xl text-black bg-white hover:bg-neutral-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
                   >
-                    {isUpgrading ? <Loader2 className="w-5 h-5 animate-spin text-white/70" /> : "Unlock Unlimited"}
+                    {isUpgrading ? <Loader2 className="w-5 h-5 animate-spin text-black/70" /> : "Upgrade via Stripe"}
                   </button>
                 </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal Overlay */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
+              animate={{ scale: 1, opacity: 1, y: 0 }} 
+              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-neutral-800/80 rounded-3xl shadow-[0_0_80px_-15px_rgba(255,255,255,0.08)] flex flex-col relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+              <button 
+                onClick={() => setShowSettingsModal(false)} 
+                className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+
+              <div className="flex flex-col items-center mb-8 relative">
+                <div className="w-14 h-14 bg-gradient-to-b from-neutral-800 to-neutral-900 border border-white/10 rounded-2xl flex items-center justify-center mb-5 shadow-xl relative overflow-hidden">
+                  <div className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity" />
+                  <Settings className="w-6 h-6 text-neutral-300" />
+                </div>
+                <h1 className="text-2xl font-semibold text-white tracking-tight">Settings</h1>
+                <p className="text-[14px] text-neutral-400 mt-2.5 text-center leading-relaxed">
+                  Manage your account and billing.
+                </p>
+              </div>
+              
+              <div className="w-full flex flex-col gap-5">
+                <div className="bg-[#111] border border-white/5 rounded-2xl p-4 flex justify-between items-center group hover:border-white/10 transition-colors">
+                  <div>
+                    <h3 className="text-[14px] font-medium text-white">Current Plan</h3>
+                    <p className="text-[13px] text-neutral-400 mt-1">{tier === 'pro' ? 'Pro Membership active' : 'Free Trial limits applied'}</p>
+                  </div>
+                  <div className="bg-black px-3 py-1.5 rounded-lg border border-neutral-800 shadow-inner">
+                    <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">{tier}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleManageBilling}
+                  disabled={isManagingBilling}
+                  className="w-full bg-white hover:bg-neutral-200 text-black font-medium text-[14px] py-3.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:shadow-[0_0_25px_rgba(255,255,255,0.15)]"
+                >
+                  {isManagingBilling ? <Loader2 className="w-5 h-5 animate-spin text-black" /> : "Manage Billing"}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -917,15 +1012,24 @@ date: ${note.date}
                   <p className="text-[11px] font-medium text-neutral-300 truncate" title={userEmail}>
                     {userEmail}
                   </p>
-                  <p className="text-[9px] text-neutral-500 uppercase tracking-widest mt-0.5">Pro User</p>
+                  <p className="text-[9px] text-neutral-500 uppercase tracking-widest mt-0.5">{tier === 'pro' ? 'Pro User' : 'Free User'}</p>
                 </div>
-                <button
-                  onClick={handleSignOut}
-                  className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-neutral-800 rounded-md transition-all shrink-0"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={() => setShowSettingsModal(true)}
+                    className="p-1.5 text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-md transition-all"
+                    title="Settings"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-neutral-800 rounded-md transition-all"
+                    title="Sign Out"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
