@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Monitor, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play } from "lucide-react";
+import { Mic, MicOff, Monitor, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -22,6 +22,26 @@ const AVAILABLE_LANGUAGES = [
   { code: 'fr', label: 'French', native: 'Français' },
   { code: 'de', label: 'German', native: 'Deutsch' },
   { code: 'ja', label: 'Japanese', native: '日本語' },
+  { code: 'hi', label: 'Hindi', native: 'हिन्दी' },
+  { code: 'ar', label: 'Arabic', native: 'العربية' },
+  { code: 'pt', label: 'Portuguese', native: 'Português' },
+  { code: 'ru', label: 'Russian', native: 'Русский' },
+  { code: 'it', label: 'Italian', native: 'Italiano' },
+  { code: 'ko', label: 'Korean', native: '한국어' },
+  { code: 'nl', label: 'Dutch', native: 'Nederlands' },
+  { code: 'tr', label: 'Turkish', native: 'Türkçe' },
+  { code: 'pl', label: 'Polish', native: 'Polski' },
+  { code: 'sv', label: 'Swedish', native: 'Svenska' },
+  { code: 'vi', label: 'Vietnamese', native: 'Tiếng Việt' },
+  { code: 'th', label: 'Thai', native: 'ไทย' },
+  { code: 'id', label: 'Indonesian', native: 'Bahasa Indonesia' },
+  { code: 'ro', label: 'Romanian', native: 'Română' },
+  { code: 'el', label: 'Greek', native: 'Ελληνικά' },
+  { code: 'cs', label: 'Czech', native: 'Čeština' },
+  { code: 'da', label: 'Danish', native: 'Dansk' },
+  { code: 'fi', label: 'Finnish', native: 'Suomi' },
+  { code: 'hu', label: 'Hungarian', native: 'Magyar' },
+  { code: 'no', label: 'Norwegian', native: 'Norsk' },
 ];
 
 export default function Home() {
@@ -93,6 +113,13 @@ export default function Home() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [showAddViewModal, setShowAddViewModal] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [translationSearch, setTranslationSearch] = useState("");
+
+  const filteredTranslationLanguages = AVAILABLE_LANGUAGES.filter(lang => 
+    lang.label.toLowerCase().includes(translationSearch.toLowerCase()) || 
+    lang.native.toLowerCase().includes(translationSearch.toLowerCase())
+  );
+  const closestTranslationLanguage = translationSearch.trim() === "" ? null : filteredTranslationLanguages[0];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1052,29 +1079,70 @@ date: ${note.date}
 
                 <div className="space-y-3 mt-2">
                   <h3 className="text-xs font-semibold text-neutral-500 tracking-wider uppercase mb-1">Real-Time Translation</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    {AVAILABLE_LANGUAGES.map(lang => (
-                      <button
-                        key={`live-${lang.code}`}
-                        onClick={() => {
-                          // Prevent multiple live translation views due to soniox constraint
-                          if (workspaceViews.some(v => v.type === 'live_translation')) {
-                            toast.error("Only 1 Live Translation view is supported per session.");
-                            return;
-                          }
-                          const id = crypto.randomUUID();
-                          addWorkspaceView({ id: id, type: 'live_translation', language: lang.code });
-                          setActiveWorkspaceId(id);
-                          setShowAddViewModal(false);
-                        }}
-                        className="py-2.5 px-2 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex flex-col items-center gap-1 group"
-                      >
-                        <RadioTower className="w-4 h-4 text-neutral-500 group-hover:text-amber-400 mb-1.5" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider">{lang.label}</span>
-                        {lang.code !== 'en' && <span className="text-[11px] font-medium text-neutral-400 mt-0.5">{lang.native}</span>}
-                      </button>
-                    ))}
+                  
+                  <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                    <input
+                      type="text"
+                      placeholder="Enter language to search..."
+                      value={translationSearch}
+                      onChange={(e) => setTranslationSearch(e.target.value)}
+                      className="w-full bg-[#111] border border-neutral-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-700 transition"
+                    />
                   </div>
+
+                  {translationSearch.trim() === "" ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {AVAILABLE_LANGUAGES.slice(0, 6).map(lang => (
+                        <button
+                          key={`live-${lang.code}`}
+                          onClick={() => {
+                            if (workspaceViews.some(v => v.type === 'live_translation')) {
+                              toast.error("Only 1 Live Translation view is supported per session.");
+                              return;
+                            }
+                            const id = crypto.randomUUID();
+                            addWorkspaceView({ id: id, type: 'live_translation', language: lang.code });
+                            setActiveWorkspaceId(id);
+                            setShowAddViewModal(false);
+                          }}
+                          className="py-2.5 px-2 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex flex-col items-center gap-1 group"
+                        >
+                          <RadioTower className="w-4 h-4 text-neutral-500 group-hover:text-blue-400 mb-1.5" />
+                          <span className="text-[11px] font-bold uppercase tracking-wider">{lang.label}</span>
+                          {lang.code !== 'en' && <span className="text-[11px] font-medium text-neutral-400 mt-0.5">{lang.native}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  ) : closestTranslationLanguage ? (
+                    <button
+                      onClick={() => {
+                        if (workspaceViews.some(v => v.type === 'live_translation')) {
+                          toast.error("Only 1 Live Translation view is supported per session.");
+                          return;
+                        }
+                        const id = crypto.randomUUID();
+                        addWorkspaceView({ id: id, type: 'live_translation', language: closestTranslationLanguage.code });
+                        setActiveWorkspaceId(id);
+                        setShowAddViewModal(false);
+                        setTranslationSearch("");
+                      }}
+                      className="w-full py-3 px-4 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <RadioTower className="w-5 h-5 text-neutral-400 group-hover:text-blue-400 transition" />
+                        <div className="flex flex-col items-start">
+                          <span className="text-sm font-bold uppercase tracking-wider">{closestTranslationLanguage.label}</span>
+                          {closestTranslationLanguage.code !== 'en' && <span className="text-xs font-medium text-neutral-500">{closestTranslationLanguage.native}</span>}
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-semibold bg-neutral-800/80 text-neutral-400 group-hover:bg-blue-500/20 group-hover:text-blue-400 px-2.5 py-1 rounded-md transition border border-neutral-700/50 group-hover:border-blue-500/30">Add View</span>
+                    </button>
+                  ) : (
+                    <div className="text-[11px] text-neutral-500 text-center py-3 bg-[#111] rounded-xl border border-neutral-800">
+                      No matching language found.
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
