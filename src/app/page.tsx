@@ -438,66 +438,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Waitlist Section */}
-      <section id="waitlist" className="py-24 md:py-32 px-6 bg-[#050505] border-t border-neutral-900">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-medium text-blue-400 mb-8">
-              Closed Beta
-            </div>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">Join the Waitlist</h2>
-            <p className="text-neutral-400 max-w-xl mx-auto text-lg leading-relaxed">
-              Meeting by HenryAI is currently in private beta. Skip the line by joining our exclusive waitlist, or try the 15-minute free preview right now.
-            </p>
-          </div>
-
-          <div className="bg-[#0a0a0a] rounded-3xl p-8 md:p-12 border border-neutral-800 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center gap-8">
-            {/* Glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
-
-            <div className="flex-1 relative z-10 w-full text-center md:text-left">
-              <h3 className="text-2xl font-semibold text-white mb-2">Get Early Access</h3>
-              <p className="text-neutral-400 text-sm">We&apos;ll notify you the moment a spot opens up.</p>
-            </div>
-
-            <div className="flex-1 relative z-10 w-full">
-              <form
-                onSubmit={handleJoinWaitlist}
-                className="flex flex-col sm:flex-row gap-3"
-              >
-                <input
-                  type="email"
-                  required
-                  value={waitlistEmail}
-                  onChange={(e) => setWaitlistEmail(e.target.value)}
-                  disabled={waitlistStatus === 'loading' || waitlistStatus === 'success'}
-                  placeholder="Enter your email..."
-                  className="flex-1 bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-sans disabled:opacity-50"
-                />
-                <button
-                  type="submit"
-                  disabled={waitlistStatus === 'loading' || waitlistStatus === 'success'}
-                  className="bg-white text-black font-semibold text-sm px-6 py-3 rounded-xl hover:bg-neutral-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] whitespace-nowrap disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2 min-w-[140px]"
-                >
-                  {waitlistStatus === 'loading' ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Joining...</>
-                  ) : waitlistStatus === 'success' ? (
-                    <><CheckCircle2 className="w-4 h-4" /> Joined!</>
-                  ) : (
-                    "Join Waitlist"
-                  )}
-                </button>
-              </form>
-              {waitlistStatus === 'error' && (
-                <p className="text-red-400 text-xs mt-3 text-left animate-in slide-in-from-top-1 opacity-100">{waitlistError}</p>
-              )}
-              {waitlistStatus === 'success' && (
-                <p className="text-green-400 text-xs mt-3 text-left animate-in slide-in-from-top-1 opacity-100">Thanks for joining! We'll be in touch soon.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-neutral-900 bg-[#050505]">

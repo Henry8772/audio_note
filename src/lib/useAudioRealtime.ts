@@ -25,15 +25,19 @@ export function useAudioRealtime() {
     isSystemAudioEnabled,
   } = useAppStore();
 
-  const connect = useCallback(async () => {
+  const connect = useCallback(async (isResume: boolean = false) => {
     try {
       if (!isMicEnabled && !isSystemAudioEnabled) {
         throw new Error("Please enable at least one audio source (Microphone or System Audio).");
       }
 
       setIsConnecting(true);
-      clearTranscript();
-      setSummaries({});
+      if (!isResume) {
+        clearTranscript();
+        setSummaries({});
+      }
+      
+      const sessionId = `soniox-session-${Date.now()}`;
 
       // 1. Get Microphone
       let micStream: MediaStream | null = null;
@@ -188,11 +192,9 @@ export function useAudioRealtime() {
         const fullTranscript = renderTokens(originalTokens);
         const translatedTranscript = renderTokens(translatedTokens);
 
-        // Update the UI
-        // Note: We use a single ID here so the bubble continuously grows and updates 
-        // with the speaker diarization labels perfectly formatted.
+        // Update the UI with a unique session bubble
         addOrUpdateTranscriptItem({
-          id: "soniox-live-session",
+          id: sessionId,
           role: "user",
           text: fullTranscript,
           isFinal: res.finished || false
@@ -200,7 +202,7 @@ export function useAudioRealtime() {
 
         if (translatedTokens.length > 0) {
           addOrUpdateTranslatedItem({
-            id: "soniox-live-session-translated",
+            id: `${sessionId}-translated`,
             role: "user",
             text: translatedTranscript,
             isFinal: res.finished || false

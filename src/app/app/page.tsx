@@ -15,12 +15,12 @@ import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 
 const AVAILABLE_LANGUAGES = [
-  { code: 'en', label: 'EN' },
-  { code: 'zh', label: 'ZH' },
-  { code: 'es', label: 'ES' },
-  { code: 'fr', label: 'FR' },
-  { code: 'de', label: 'DE' },
-  { code: 'ja', label: 'JA' },
+  { code: 'en', label: 'English', native: 'English' },
+  { code: 'zh', label: 'Chinese', native: '中文' },
+  { code: 'es', label: 'Spanish', native: 'Español' },
+  { code: 'fr', label: 'French', native: 'Français' },
+  { code: 'de', label: 'German', native: 'Deutsch' },
+  { code: 'ja', label: 'Japanese', native: '日本語' },
 ];
 
 export default function Home() {
@@ -101,7 +101,7 @@ export default function Home() {
   useEffect(() => {
     const hasLegacyViews = workspaceViews.some(v => v.type === 'ai_notes' && v.language !== 'en');
     if (hasLegacyViews && setWorkspaceViews) {
-      const migratedViews = workspaceViews.map(v => 
+      const migratedViews = workspaceViews.map(v =>
         (v.type === 'ai_notes' && v.language !== 'en')
           ? { ...v, type: 'live_translation' as 'live_translation' }
           : v
@@ -110,13 +110,13 @@ export default function Home() {
       const liveTranslations = migratedViews.filter(v => v.type === 'live_translation');
       let finalViews = migratedViews;
       if (liveTranslations.length > 1) {
-         const firstId = liveTranslations[0].id;
-         finalViews = migratedViews.filter(v => v.type !== 'live_translation' || v.id === firstId);
+        const firstId = liveTranslations[0].id;
+        finalViews = migratedViews.filter(v => v.type !== 'live_translation' || v.id === firstId);
       }
       setWorkspaceViews(finalViews);
     }
   }, [workspaceViews, setWorkspaceViews]);
-  
+
   // Auto-scroll translated transcript
   useEffect(() => {
     if (translatedTranscriptContainerRef.current) {
@@ -160,7 +160,7 @@ export default function Home() {
           setFreeUsageExceeded(true);
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   // Sync Supabase Auth State
@@ -259,7 +259,7 @@ export default function Home() {
         // Fallback or silent fail if no mics
       }
     }
-    
+
     fetchMics();
     navigator.mediaDevices?.addEventListener('devicechange', fetchMics);
     return () => navigator.mediaDevices?.removeEventListener('devicechange', fetchMics);
@@ -284,7 +284,7 @@ export default function Home() {
     const currentItems = state.transcriptItems;
     let currentIndex = state.lastSummaryIndex;
     const currentSummaries = state.summaries;
-      const currentTranslationLanguages = workspaceViews.filter(v => v.type === 'ai_notes' && v.language).map(v => v.language);
+    const currentTranslationLanguages = workspaceViews.filter(v => v.type === 'ai_notes' && v.language).map(v => v.language);
 
     let lastItemHasGrown = false;
     if (currentItems.length > 0 && currentItems.length === currentIndex) {
@@ -392,7 +392,7 @@ date: ${note.date}
     const hiddenTranscriptData = `\n\n<!-- AUDIO_NOTE_DATA_START\n${JSON.stringify(note.transcriptItems)}\nAUDIO_NOTE_DATA_END -->`;
 
     const fileContent = frontmatter + body + hiddenSummariesData + hiddenTranscriptData;
-    
+
     const blob = new Blob([fileContent], { type: "text/markdown;charset=utf-8" });
     saveAs(blob, filename);
   };
@@ -498,12 +498,12 @@ date: ${note.date}
         hostId: hostId,
         password: requirePassword ? generatedPassword : undefined
       });
-      
+
       setLiveSession(sessionId, hostId);
-      
+
       const shareUrl = `${window.location.origin}/live/${sessionId}`;
       await navigator.clipboard.writeText(shareUrl);
-      toast.success("Live link copied to clipboard!", { 
+      toast.success("Live link copied to clipboard!", {
         description: requirePassword ? `Password: ${generatedPassword}. Anyone with the link & password can view.` : 'Anyone with the link can view.',
         duration: 8000
       });
@@ -521,7 +521,7 @@ date: ${note.date}
       const transcriptText = transcriptItems
         .map(i => `${i.role === 'user' ? 'Speaker' : 'AI Assistant'}: ${i.text}`)
         .join('\n\n');
-        
+
       updateTranscriptMutation({
         sessionId: liveSessionId as any,
         transcript: transcriptText,
@@ -620,7 +620,7 @@ date: ${note.date}
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planId: 'pro' })
       });
-      
+
       const data = await res.json();
       if (res.ok && data.url) {
         window.location.href = data.url;
@@ -641,7 +641,7 @@ date: ${note.date}
       setShowUpgradeModal(true);
       return;
     }
-    
+
     setIsManagingBilling(true);
     try {
       const res = await fetch('/api/stripe/portal', { method: 'POST' });
@@ -661,10 +661,10 @@ date: ${note.date}
   const handleManualSave = () => {
     if (transcriptItems.length === 0) return;
     const now = new Date();
-    
+
     let title = "Meeting Note";
     const defaultLangSummary = summaries['en'] || Object.values(summaries)[0];
-    
+
     if (defaultLangSummary) {
       const firstLine = defaultLangSummary.split('\n')[0];
       if (firstLine && firstLine.startsWith('# ')) {
@@ -673,7 +673,7 @@ date: ${note.date}
         title = firstLine.substring(0, 50);
       }
     }
-    
+
     addSavedNote({
       id: crypto.randomUUID(),
       title: title || `Note ${now.toLocaleTimeString()}`,
@@ -695,10 +695,10 @@ date: ${note.date}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
           >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-neutral-800/80 rounded-3xl shadow-[0_0_80px_-15px_rgba(255,255,255,0.08)] flex flex-col relative overflow-hidden"
             >
@@ -706,8 +706,8 @@ date: ${note.date}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
               {!freeUsageExceeded && (
-                <button 
-                  onClick={() => setShowAuthModal(false)} 
+                <button
+                  onClick={() => setShowAuthModal(false)}
                   className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
                 >
                   <span className="sr-only">Close</span>
@@ -721,12 +721,12 @@ date: ${note.date}
                 </div>
                 <h1 className="text-[22px] font-bold text-white tracking-tight">Welcome to Henry AI</h1>
                 <p className="text-[13px] text-neutral-400 mt-2 text-center leading-relaxed max-w-[280px]">
-                  {freeUsageExceeded 
-                    ? "Your 15-minute free preview has ended. Sign in to unlock unlimited meeting intelligence." 
+                  {freeUsageExceeded
+                    ? "Your 15-minute free preview has ended. Sign in to unlock unlimited meeting intelligence."
                     : "Sign in or create an account to save unlimited notes and live sessions."}
                 </p>
               </div>
-              
+
               <div className="w-full flex flex-col gap-4">
                 {/* Auth Mode Toggle */}
                 <div className="flex bg-[#111] p-1 rounded-lg border border-neutral-800">
@@ -764,7 +764,7 @@ date: ${note.date}
                     className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3.5 text-[14px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500 focus:ring-1 focus:ring-neutral-500 transition-all font-sans"
                     disabled={isAuthenticating}
                   />
-                  
+
                   {authError && (
                     <div className="text-red-400 text-xs font-medium px-2 py-1 bg-red-400/10 rounded-md border border-red-400/20 text-center animate-in fade-in slide-in-from-top-1">
                       {authError}
@@ -782,7 +782,7 @@ date: ${note.date}
               </div>
 
               <p className="mt-8 text-[11px] text-neutral-600 text-center leading-relaxed">
-                By continuing, you agree to Henry AI's <br/> <a href="#" className="underline hover:text-white transition-colors">Terms of Service</a> and <a href="#" className="underline hover:text-white transition-colors">Privacy Policy</a>.
+                By continuing, you agree to Henry AI's <br /> <a href="#" className="underline hover:text-white transition-colors">Terms of Service</a> and <a href="#" className="underline hover:text-white transition-colors">Privacy Policy</a>.
               </p>
             </motion.div>
           </motion.div>
@@ -796,10 +796,10 @@ date: ${note.date}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
           >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-amber-500/20 rounded-3xl shadow-[0_0_80px_-15px_rgba(245,158,11,0.08)] flex flex-col relative overflow-hidden"
             >
@@ -807,8 +807,8 @@ date: ${note.date}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
 
               {!freeUsageExceeded && (
-                <button 
-                  onClick={() => setShowUpgradeModal(false)} 
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
                   className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
                 >
                   <span className="sr-only">Close</span>
@@ -825,12 +825,12 @@ date: ${note.date}
                 </div>
                 <h1 className="text-2xl font-semibold text-white tracking-tight">Upgrade to Pro</h1>
                 <p className="text-[14px] text-neutral-400 mt-2.5 text-center leading-relaxed max-w-[280px]">
-                  {upgradeModalSource === 'limit' && freeUsageExceeded 
-                    ? "Your 15-minute free transcription has ended. Upgrade to Pro to continue recording." 
+                  {upgradeModalSource === 'limit' && freeUsageExceeded
+                    ? "Your 15-minute free transcription has ended. Upgrade to Pro to continue recording."
                     : "Unlock unlimited meeting intelligence with Pro."}
                 </p>
               </div>
-              
+
               <div className="w-full flex flex-col gap-5">
                 <div className="bg-[#111] border border-white/5 rounded-2xl p-4 space-y-3.5">
                   <div className="flex items-center text-[13px] text-neutral-300">
@@ -875,17 +875,17 @@ date: ${note.date}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
           >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-neutral-800/80 rounded-3xl shadow-[0_0_80px_-15px_rgba(255,255,255,0.08)] flex flex-col relative overflow-hidden"
             >
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-              <button 
-                onClick={() => setShowSettingsModal(false)} 
+              <button
+                onClick={() => setShowSettingsModal(false)}
                 className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
               >
                 <span className="sr-only">Close</span>
@@ -902,7 +902,7 @@ date: ${note.date}
                   Manage your account and billing.
                 </p>
               </div>
-              
+
               <div className="w-full flex flex-col gap-5">
                 <div className="bg-[#111] border border-white/5 rounded-2xl p-4 flex justify-between items-center group hover:border-white/10 transition-colors">
                   <div>
@@ -934,17 +934,17 @@ date: ${note.date}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
           >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-neutral-800/80 rounded-3xl shadow-[0_0_80px_-15px_rgba(255,255,255,0.08)] flex flex-col relative overflow-hidden"
             >
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-              <button 
-                onClick={() => setShowAddViewModal(false)} 
+              <button
+                onClick={() => setShowAddViewModal(false)}
                 className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
               >
                 <span className="sr-only">Close</span>
@@ -957,7 +957,7 @@ date: ${note.date}
                   Choose a widget to add to your right panel.
                 </p>
               </div>
-              
+
               <div className="w-full flex flex-col gap-4">
                 <div className="space-y-3">
                   <h3 className="text-xs font-semibold text-neutral-500 tracking-wider uppercase mb-1">AI Notes</h3>
@@ -973,8 +973,9 @@ date: ${note.date}
                         }}
                         className="py-2.5 px-2 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex flex-col items-center gap-1 group"
                       >
-                        <FileText className="w-4 h-4 text-neutral-500 group-hover:text-blue-400" />
-                        <span className="text-[10px] font-medium uppercase">{lang.label}</span>
+                        <FileText className="w-4 h-4 text-neutral-500 group-hover:text-blue-400 mb-1.5" />
+                        <span className="text-[11px] font-bold uppercase tracking-wider">{lang.label}</span>
+                        {lang.code !== 'en' && <span className="text-[11px] font-medium text-neutral-400 mt-0.5">{lang.native}</span>}
                       </button>
                     ))}
                   </div>
@@ -983,14 +984,14 @@ date: ${note.date}
                 <div className="space-y-3 mt-2">
                   <h3 className="text-xs font-semibold text-neutral-500 tracking-wider uppercase mb-1">Real-Time Translation</h3>
                   <div className="grid grid-cols-3 gap-2">
-                    {AVAILABLE_LANGUAGES.filter(l => l.code !== 'en').map(lang => (
+                    {AVAILABLE_LANGUAGES.map(lang => (
                       <button
                         key={`live-${lang.code}`}
                         onClick={() => {
                           // Prevent multiple live translation views due to soniox constraint
                           if (workspaceViews.some(v => v.type === 'live_translation')) {
-                             toast.error("Only 1 Live Translation view is supported per session.");
-                             return;
+                            toast.error("Only 1 Live Translation view is supported per session.");
+                            return;
                           }
                           const id = crypto.randomUUID();
                           addWorkspaceView({ id: id, type: 'live_translation', language: lang.code });
@@ -999,8 +1000,9 @@ date: ${note.date}
                         }}
                         className="py-2.5 px-2 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex flex-col items-center gap-1 group"
                       >
-                        <RadioTower className="w-4 h-4 text-neutral-500 group-hover:text-amber-400" />
-                        <span className="text-[10px] font-medium uppercase">{lang.label}</span>
+                        <RadioTower className="w-4 h-4 text-neutral-500 group-hover:text-amber-400 mb-1.5" />
+                        <span className="text-[11px] font-bold uppercase tracking-wider">{lang.label}</span>
+                        {lang.code !== 'en' && <span className="text-[11px] font-medium text-neutral-400 mt-0.5">{lang.native}</span>}
                       </button>
                     ))}
                   </div>
@@ -1017,17 +1019,17 @@ date: ${note.date}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
           >
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 10 }} 
-              animate={{ scale: 1, opacity: 1, y: 0 }} 
-              exit={{ scale: 0.95, opacity: 0, y: 10 }} 
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-neutral-800/80 rounded-3xl shadow-[0_0_80px_-15px_rgba(255,255,255,0.08)] flex flex-col relative overflow-hidden"
             >
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-              
-              <button 
-                onClick={() => setShowShareModal(false)} 
+
+              <button
+                onClick={() => setShowShareModal(false)}
                 className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
               >
                 <span className="sr-only">Close</span>
@@ -1051,11 +1053,11 @@ date: ${note.date}
                     <span className="text-xs text-neutral-500 mt-0.5">Protect this live session</span>
                   </div>
                   <div className={`relative w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${requirePassword ? 'bg-[#3498db]' : 'bg-neutral-700'}`}>
-                    <input 
-                      type="checkbox" 
-                      className="hidden" 
-                      checked={requirePassword} 
-                      onChange={(e) => setRequirePassword(e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={requirePassword}
+                      onChange={(e) => setRequirePassword(e.target.checked)}
                     />
                     <div className={`absolute left-1 bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${requirePassword ? 'translate-x-5' : 'translate-x-0'}`}></div>
                   </div>
@@ -1063,9 +1065,9 @@ date: ${note.date}
 
                 <AnimatePresence>
                   {requirePassword && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }} 
-                      animate={{ height: "auto", opacity: 1 }} 
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
@@ -1108,8 +1110,8 @@ date: ${note.date}
           <button
             onClick={() => setActiveView('record')}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${activeView === 'record'
-                ? 'bg-[#111] text-white shadow-sm border border-neutral-800'
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
+              ? 'bg-[#111] text-white shadow-sm border border-neutral-800'
+              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
               }`}
           >
             <LayoutDashboard className="w-4 h-4 shrink-0" />
@@ -1118,8 +1120,8 @@ date: ${note.date}
           <button
             onClick={() => setActiveView('notes')}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium ${activeView === 'notes'
-                ? 'bg-[#111] text-white shadow-sm border border-neutral-800'
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
+              ? 'bg-[#111] text-white shadow-sm border border-neutral-800'
+              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
               }`}
           >
             <Clock className="w-4 h-4 shrink-0" />
@@ -1136,10 +1138,10 @@ date: ${note.date}
           <p className="hidden md:block text-[10px] text-neutral-600 leading-tight">
             Data is securely saved locally to your device.
           </p>
-          
+
           <AnimatePresence>
             {isAuthenticated && userEmail && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
                 className="flex items-center justify-between bg-[#111] p-2.5 rounded-lg border border-neutral-800"
               >
@@ -1227,8 +1229,8 @@ date: ${note.date}
                             }
                           }}
                           className={`text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded-md uppercase font-medium transition-all ${isSelected
-                              ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50'
-                              : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
+                            ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50'
+                            : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900 border border-transparent'
                             } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           {lang.label}
@@ -1248,32 +1250,30 @@ date: ${note.date}
                     <button
                       onClick={() => setIsMicEnabled(!isMicEnabled)}
                       disabled={isListening}
-                      className={`flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        isMicEnabled 
-                          ? 'bg-neutral-800 text-white shadow-sm' 
-                          : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900'
-                      } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isMicEnabled
+                        ? 'bg-neutral-800 text-white shadow-sm'
+                        : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900'
+                        } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      {isMicEnabled ? <Mic className="w-3.5 h-3.5 mr-1.5" /> : <MicOff className="w-3.5 h-3.5 mr-1.5" />} 
+                      {isMicEnabled ? <Mic className="w-3.5 h-3.5 mr-1.5" /> : <MicOff className="w-3.5 h-3.5 mr-1.5" />}
                       Mic
                     </button>
                     <button
                       onClick={() => setIsSystemAudioEnabled(!isSystemAudioEnabled)}
                       disabled={isListening}
-                      className={`flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        isSystemAudioEnabled 
-                          ? 'bg-neutral-800 text-white shadow-sm' 
-                          : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900'
-                      } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isSystemAudioEnabled
+                        ? 'bg-neutral-800 text-white shadow-sm'
+                        : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900'
+                        } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <Monitor className="w-3.5 h-3.5 mr-1.5" /> 
+                      <Monitor className="w-3.5 h-3.5 mr-1.5" />
                       System Audio
                     </button>
                   </div>
 
                   {isMicEnabled && (
-                    <select 
-                      value={selectedMicId} 
+                    <select
+                      value={selectedMicId}
                       onChange={(e) => setSelectedMicId(e.target.value)}
                       className="bg-neutral-900 text-[11px] text-neutral-300 font-medium px-2 sm:px-3 py-2 rounded-xl border border-neutral-700 outline-none hover:text-white transition-colors max-w-[90px] sm:max-w-[150px] truncate cursor-pointer appearance-none"
                       disabled={isListening}
@@ -1290,13 +1290,12 @@ date: ${note.date}
                   <button
                     onClick={handleShareLive}
                     disabled={!isListening || isSharingLive}
-                    className={`text-[10px] sm:text-[11px] px-3 sm:px-4 py-2 rounded-xl uppercase font-bold tracking-wider flex items-center gap-1.5 transition-all outline-none border ${
-                      liveSessionId
-                        ? "bg-red-500/10 text-red-400 border-red-500/30"
-                        : isListening
+                    className={`text-[10px] sm:text-[11px] px-3 sm:px-4 py-2 rounded-xl uppercase font-bold tracking-wider flex items-center gap-1.5 transition-all outline-none border ${liveSessionId
+                      ? "bg-red-500/10 text-red-400 border-red-500/30"
+                      : isListening
                         ? "bg-neutral-900 text-blue-400 border-neutral-700 hover:text-white hover:bg-neutral-800"
                         : "bg-neutral-900 text-neutral-600 border-neutral-800 cursor-not-allowed"
-                    }`}
+                      }`}
                   >
                     {liveSessionId ? (
                       <>
@@ -1313,34 +1312,62 @@ date: ${note.date}
                     )}
                   </button>
 
-                  <button
-                    onClick={() => {
-                      if (!isAuthenticated) {
-                        setShowAuthModal(true);
-                        return;
-                      }
-                      if (!isListening && !isMicEnabled && !isSystemAudioEnabled) {
-                        toast.error("Please enable Mic or System Audio to start.");
-                        return;
-                      }
-                      isListening ? stopListening() : connect();
-                    }}
-                    disabled={isConnecting}
-                    className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isConnecting
-                        ? 'bg-neutral-900 border border-neutral-800 text-neutral-400 cursor-not-allowed'
-                        : isListening
-                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)]'
-                          : 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]'
-                      }`}
-                  >
-                    {isConnecting ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" /> <span className="hidden sm:inline">Connecting</span></>
-                    ) : isListening ? (
-                      <><Square className="w-4 h-4 fill-current" /> Stop</>
-                    ) : (
-                      <><Mic className="w-4 h-4" /> Start</>
-                    )}
-                  </button>
+                  {(() => {
+                    if (isConnecting) {
+                      return (
+                        <button disabled className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 bg-neutral-900 border border-neutral-800 text-neutral-400 cursor-not-allowed">
+                          <Loader2 className="w-4 h-4 animate-spin" /> <span className="hidden sm:inline">Connecting</span>
+                        </button>
+                      );
+                    }
+                    if (isListening) {
+                      return (
+                        <button onClick={stopListening} className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)]">
+                          <Square className="w-4 h-4 fill-current" /> Stop
+                        </button>
+                      );
+                    }
+                    if (transcriptItems.length > 0) {
+                      return (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              if (!isAuthenticated) return setShowAuthModal(true);
+                              if (!isMicEnabled && !isSystemAudioEnabled) return toast.error("Please enable Mic or System Audio to start.");
+                              connect(true);
+                            }}
+                            className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 shadow-[0_0_15px_rgba(69,143,255,0.15)]"
+                          >
+                            <Mic className="w-4 h-4" /> Resume
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (!isAuthenticated) return setShowAuthModal(true);
+                              if (!isMicEnabled && !isSystemAudioEnabled) return toast.error("Please enable Mic or System Audio to start.");
+                              if (window.confirm("Are you sure you want to start a new session? This will clear your current timeline.")) {
+                                connect(false);
+                              }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800 border border-neutral-800"
+                          >
+                            New
+                          </button>
+                        </div>
+                      );
+                    }
+                    return (
+                      <button
+                        onClick={() => {
+                          if (!isAuthenticated) return setShowAuthModal(true);
+                          if (!isMicEnabled && !isSystemAudioEnabled) return toast.error("Please enable Mic or System Audio to start.");
+                          connect(false);
+                        }}
+                        className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 bg-white text-black hover:bg-neutral-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                      >
+                        <Mic className="w-4 h-4" /> Start
+                      </button>
+                    );
+                  })()}
                 </div>
 
                 {/* Left Pane: Raw Transcript */}
@@ -1365,11 +1392,10 @@ date: ${note.date}
                           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                           key={item.id + idx} className="flex flex-col items-start w-full"
                         >
-                          <div className={`p-4 rounded-xl border w-full flex flex-col gap-1.5 shadow-sm ${
-                            item.role === 'user' 
-                              ? 'bg-[#151515] border-neutral-800/80' 
-                              : 'bg-[#0f172a]/40 border-blue-900/30'
-                          }`}>
+                          <div className={`p-4 rounded-xl border w-full flex flex-col gap-1.5 shadow-sm ${item.role === 'user'
+                            ? 'bg-[#151515] border-neutral-800/80'
+                            : 'bg-[#0f172a]/40 border-blue-900/30'
+                            }`}>
                             <span className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${item.role === 'user' ? 'text-neutral-500' : 'text-blue-500'}`}>
                               {item.role === 'user' ? 'Live Room' : 'AI Assistant'}
                             </span>
@@ -1386,37 +1412,35 @@ date: ${note.date}
                 {/* Right Pane: Customizable Workspace Tabs */}
                 <div className="flex flex-col h-full bg-black relative min-h-0 overflow-hidden border-l border-neutral-800/80">
                   <div className="min-h-[48px] border-b border-neutral-800/80 flex items-center justify-between px-2 sm:px-4 bg-[#0a0a0a]">
-                    
+
                     {/* Tabs / Headers */}
                     <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-2">
-                       {workspaceViews.map((view) => (
-                          <button
-                            key={view.id}
-                            onClick={() => setActiveWorkspaceId(view.id)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors whitespace-nowrap border ${activeWorkspaceId === view.id ? 'bg-neutral-800 border-neutral-700 text-white shadow-sm' : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900'}`}
-                          >
-                            {view.type === 'ai_notes' ? <FileText className="w-3.5 h-3.5" /> : <RadioTower className="w-3.5 h-3.5" />}
-                            {view.type === 'ai_notes' ? 'AI NOTES' : 'REAL-TIME TRANSLATION'}
-                            <span className="opacity-50 text-[9px] uppercase">[{view.language}]</span>
-                            
-                            {workspaceViews.length > 1 && (
-                              <div onClick={(e) => { 
-                                e.stopPropagation(); 
-                                removeWorkspaceView(view.id); 
-                              }} className="opacity-60 hover:opacity-100 hover:text-red-400 ml-1 transition-all">
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                              </div>
-                            )}
-                          </button>
-                       ))}
+                      {workspaceViews.map((view) => (
+                        <button
+                          key={view.id}
+                          onClick={() => setActiveWorkspaceId(view.id)}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors whitespace-nowrap border ${activeWorkspaceId === view.id ? 'bg-neutral-800 border-neutral-700 text-white shadow-sm' : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900'}`}
+                        >
+                          {view.type === 'ai_notes' ? <FileText className="w-3.5 h-3.5" /> : <RadioTower className="w-3.5 h-3.5" />}
+                          {view.type === 'ai_notes' ? 'AI NOTES' : 'TRANSLATION'}
+                          <span className="opacity-50 text-[9px] uppercase">[{AVAILABLE_LANGUAGES.find(l => l.code === view.language)?.label || view.language}]</span>
 
-                       <button
-                         onClick={() => setShowAddViewModal(true)}
-                         className="flex items-center justify-center w-7 h-7 rounded-sm bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 hover:border-neutral-700 transition-all ml-1 shrink-0"
-                         title="Add Workspace View"
-                       >
-                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
-                       </button>
+                          <div onClick={(e) => {
+                            e.stopPropagation();
+                            removeWorkspaceView(view.id);
+                          }} className="opacity-60 hover:opacity-100 hover:text-red-400 ml-1 transition-all">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          </div>
+                        </button>
+                      ))}
+
+                      <button
+                        onClick={() => setShowAddViewModal(true)}
+                        className="flex items-center justify-center w-7 h-7 rounded-sm bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 hover:border-neutral-700 transition-all ml-1 shrink-0"
+                        title="Add Workspace View"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                      </button>
                     </div>
 
                     {/* Action buttons (Save, Take Note) */}
@@ -1427,16 +1451,16 @@ date: ${note.date}
                         className="text-[10px] px-2.5 py-1.5 rounded-md border border-neutral-700 bg-[#111] text-white hover:bg-neutral-800 transition-colors flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hidden sm:flex"
                         title="Save Note to Library"
                       >
-                       {isSaved ? <Save className="w-3 h-3 text-emerald-400" /> : <Save className="w-3 h-3 text-neutral-400" />}
-                       {isSaved ? "SAVED" : "SAVE"}
+                        {isSaved ? <Save className="w-3 h-3 text-emerald-400" /> : <Save className="w-3 h-3 text-neutral-400" />}
+                        {isSaved ? "SAVED" : "SAVE"}
                       </button>
 
                       <button
                         onClick={triggerSummary}
                         disabled={
-                          isSummarizing || 
-                          isConnecting || 
-                          transcriptItems.length === 0 || 
+                          isSummarizing ||
+                          isConnecting ||
+                          transcriptItems.length === 0 ||
                           (transcriptItems.length === lastSummaryIndex && transcriptItems[transcriptItems.length - 1].text.length <= lastSummarizedTextLength + 10)
                         }
                         className="text-[10px] px-2.5 py-1.5 rounded-md border border-neutral-700 bg-neutral-800 text-white hover:bg-neutral-700 transition-colors flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1450,51 +1474,48 @@ date: ${note.date}
                   {/* Rendering Active View Payload */}
                   <div className="flex-1 min-h-0 overflow-hidden relative">
                     {workspaceViews.map((view) => {
-                       if (view.id !== activeWorkspaceId) return null;
+                      if (view.id !== activeWorkspaceId) return null;
 
-                       if (view.type === 'ai_notes') {
-                         const summaryText = summaries[view.language || 'en'];
-                         return (
-                           <div key={view.id} className="h-full flex flex-col p-6 pb-24 overflow-y-auto">
-                             {!summaryText ? (
-                               <div className="h-full flex flex-col items-center justify-center text-neutral-600 opacity-50">
-                                 <FileText className="w-8 h-8 mb-2" />
-                                 <p className="text-xs font-medium">Waiting for Summary</p>
-                               </div>
-                             ) : (
-                               <div className="prose prose-invert prose-neutral max-w-none prose-h1:text-[16px] prose-h1:font-bold prose-h1:tracking-tight prose-h1:text-white prose-h2:text-[14px] prose-h2:font-semibold prose-h2:text-neutral-100 prose-p:text-[13.5px] prose-p:leading-relaxed prose-p:text-neutral-200 prose-a:text-white prose-ul:text-[13.5px] prose-ul:text-neutral-200 prose-li:marker:text-neutral-600 font-medium tracking-wide">
-                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{summaryText}</ReactMarkdown>
-                               </div>
-                             )}
-                           </div>
-                         );
-                       }
-                       
-                       if (view.type === 'live_translation') {
-                         return (
-                           <div key={view.id} className="h-full flex flex-col pt-6 px-6 sm:px-8 pb-32 overflow-y-auto space-y-6" ref={translatedTranscriptContainerRef}>
-                             {translatedTranscriptItems.length === 0 ? (
-                               <div className="flex flex-col items-center justify-center h-full text-neutral-500 opacity-60">
-                                 <RadioTower className="w-8 h-8 mb-3 opacity-50" />
-                                 <p className="text-[13px]">Listening for translations...</p>
-                               </div>
-                             ) : (
-                               translatedTranscriptItems.map((item, index) => (
-                                 <div key={index} className="flex gap-4 group">
-                                   <div className="w-8 h-8 rounded-full bg-blue-500/10 shrink-0 flex items-center justify-center ring-1 ring-blue-500/20">
-                                     <RadioTower className="w-4 h-4 text-blue-400" />
-                                   </div>
-                                   <div className="font-medium text-[15px] leading-relaxed tracking-wide text-neutral-300">
-                                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
-                                   </div>
-                                 </div>
-                               ))
-                             )}
-                           </div>
-                         );
-                       }
+                      if (view.type === 'ai_notes') {
+                        const summaryText = summaries[view.language || 'en'];
+                        return (
+                          <div key={view.id} className="h-full flex flex-col p-6 pb-24 overflow-y-auto">
+                            {!summaryText ? (
+                              <div className="h-full flex flex-col items-center justify-center text-neutral-600 opacity-50">
+                                <FileText className="w-8 h-8 mb-2" />
+                                <p className="text-xs font-medium">Waiting for Summary</p>
+                              </div>
+                            ) : (
+                              <div className="prose prose-invert prose-neutral max-w-none prose-h1:text-[16px] prose-h1:font-bold prose-h1:tracking-tight prose-h1:text-white prose-h2:text-[14px] prose-h2:font-semibold prose-h2:text-neutral-100 prose-p:text-[13.5px] prose-p:leading-relaxed prose-p:text-neutral-200 prose-a:text-white prose-ul:text-[13.5px] prose-ul:text-neutral-200 prose-li:marker:text-neutral-600 font-medium tracking-wide">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{summaryText}</ReactMarkdown>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
 
-                       return null;
+                      if (view.type === 'live_translation') {
+                        return (
+                          <div key={view.id} className="h-full flex flex-col pt-6 px-6 sm:px-8 pb-32 overflow-y-auto space-y-6" ref={translatedTranscriptContainerRef}>
+                            {translatedTranscriptItems.length === 0 ? (
+                              <div className="flex flex-col items-center justify-center h-full text-neutral-500 opacity-60">
+                                <RadioTower className="w-8 h-8 mb-3 opacity-50" />
+                                <p className="text-[13px]">Listening for translations...</p>
+                              </div>
+                            ) : (
+                              translatedTranscriptItems.map((item, index) => (
+                                <div key={index} className="flex group">
+                                  <div className={`text-[17px] leading-[1.8] whitespace-pre-wrap break-words font-medium prose prose-invert prose-p:my-2 prose-p:leading-[1.8] max-w-none ${item.isFinal ? 'text-white' : 'text-neutral-400 italic'}`}>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return null;
                     })}
                   </div>
 
@@ -1565,8 +1586,8 @@ date: ${note.date}
                             key={note.id}
                             onClick={() => setSelectedNoteId(note.id)}
                             className={`p-4 rounded-lg cursor-pointer transition-all border ${isSelectedDate
-                                ? 'bg-neutral-900 border-neutral-700'
-                                : 'bg-[#111] border-transparent hover:bg-neutral-900/50 hover:border-neutral-800'
+                              ? 'bg-neutral-900 border-neutral-700'
+                              : 'bg-[#111] border-transparent hover:bg-neutral-900/50 hover:border-neutral-800'
                               }`}
                           >
                             <div className="flex items-start justify-between gap-4">
