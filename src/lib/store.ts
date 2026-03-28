@@ -117,7 +117,7 @@ export const useAppStore = create<AppState>()(
       tier: 'free',
       freeUsageTime: 0,
       freeUsageExceeded: false,
-      theme: 'light',
+      theme: 'dark',
       activeView: 'record',
       savedNotes: [],
       liveSessionId: null,

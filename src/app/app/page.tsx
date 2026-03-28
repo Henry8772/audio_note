@@ -1166,7 +1166,7 @@ date: ${note.date}
               </span>
             )}
           </button>
-          
+
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-sm font-medium border border-transparent ${theme === 'dark'
@@ -1244,16 +1244,6 @@ date: ${note.date}
                     </div>
                   )}
 
-                  {!isAuthenticated && (
-                    <button
-                      onClick={() => setShowAuthModal(true)}
-                      className="hidden sm:flex text-[10px] px-2.5 py-1.5 rounded-md uppercase font-bold bg-neutral-900 border border-neutral-800 text-amber-400 hover:text-amber-300 hover:bg-neutral-800 transition-all tracking-wider items-center gap-1.5 mr-[-4px]"
-                    >
-                      <Lock className="w-3 h-3" />
-                      <span>Unlock</span>
-                    </button>
-                  )}
-
                   <div className={`flex items-center gap-1 p-1 rounded-xl border hidden sm:flex ${theme === 'dark' ? 'bg-[#111] border-neutral-800' : 'bg-neutral-100/50 border-neutral-200/50'}`}>
                     <button
                       onClick={() => setIsMicEnabled(!isMicEnabled)}
@@ -1319,16 +1309,15 @@ date: ${note.date}
                   </button>
 
                   <div className={`w-[1px] h-6 mx-1 hidden sm:block ${theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-300'}`}></div>
-                  
+
                   {/* Language Selector Dropdown (Dark Theme) */}
                   <div ref={languageDropdownRef} className="relative group hidden sm:block">
                     <button
                       type="button"
                       disabled={isListening}
                       onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                      className={`flex items-center justify-between min-w-[100px] gap-2 px-3 py-1.5 rounded-lg uppercase font-medium text-xs transition-all outline-none border ${
-                        showLanguageDropdown ? (theme === 'dark' ? "bg-neutral-800 text-white border-neutral-700/50 shadow-sm" : "bg-white text-neutral-900 border-neutral-300 shadow-sm") : isListening ? (theme === 'dark' ? "bg-neutral-900 text-neutral-600 border-neutral-800 cursor-not-allowed" : "bg-neutral-100/80 text-neutral-400 border-neutral-200 cursor-not-allowed") : (theme === 'dark' ? "bg-[#111] text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900 border-transparent hover:border-neutral-800" : "bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 border-neutral-200 shadow-[0_2px_10px_rgba(0,0,0,0.05)]")
-                      }`}
+                      className={`flex items-center justify-between min-w-[100px] gap-2 px-3 py-1.5 rounded-lg uppercase font-medium text-xs transition-all outline-none border ${showLanguageDropdown ? (theme === 'dark' ? "bg-neutral-800 text-white border-neutral-700/50 shadow-sm" : "bg-white text-neutral-900 border-neutral-300 shadow-sm") : isListening ? (theme === 'dark' ? "bg-neutral-900 text-neutral-600 border-neutral-800 cursor-not-allowed" : "bg-neutral-100/80 text-neutral-400 border-neutral-200 cursor-not-allowed") : (theme === 'dark' ? "bg-[#111] text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900 border-transparent hover:border-neutral-800" : "bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 border-neutral-200 shadow-[0_2px_10px_rgba(0,0,0,0.05)]")
+                        }`}
                     >
                       <div className="flex items-center gap-1.5">
                         <Globe className="w-3.5 h-3.5" />
@@ -1337,7 +1326,7 @@ date: ${note.date}
                         </span>
                       </div>
                     </button>
-                    
+
                     <AnimatePresence>
                       {showLanguageDropdown && (
                         <>
@@ -1355,9 +1344,8 @@ date: ${note.date}
                             <div className="p-2 max-h-[240px] overflow-y-auto no-scrollbar flex flex-col gap-1">
                               <button
                                 onClick={() => setSelectedLanguages([])}
-                                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[12px] font-medium transition-colors ${
-                                  selectedLanguages.length === 0 ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200'
-                                }`}
+                                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[12px] font-medium transition-colors ${selectedLanguages.length === 0 ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200'
+                                  }`}
                               >
                                 <span>Auto-Detect</span>
                                 {selectedLanguages.length === 0 && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
@@ -1375,9 +1363,8 @@ date: ${note.date}
                                         setSelectedLanguages([...selectedLanguages, lang.code]);
                                       }
                                     }}
-                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[12px] font-medium transition-colors ${
-                                      isSelected ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200'
-                                    }`}
+                                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[12px] font-medium transition-colors ${isSelected ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200'
+                                      }`}
                                   >
                                     <div className="flex items-center gap-2">
                                       <span className={isSelected ? "font-semibold text-white" : ""}>{lang.label}</span>
