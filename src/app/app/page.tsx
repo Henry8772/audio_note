@@ -57,6 +57,7 @@ export default function Home() {
     setUserEmail,
     selectedMicId,
     setSelectedMicId,
+    freeUsageTime,
     freeUsageExceeded,
     incrementFreeUsageTime,
     setFreeUsageExceeded,
@@ -513,7 +514,7 @@ date: ${note.date}
       setShowShareModal(false);
       const hostId = crypto.randomUUID();
       const sessionId = await createSession({
-        title: "Henry AI | Meeting",
+        title: "Meetly | HenryAI",
         hostId: hostId,
         password: requirePassword ? generatedPassword : undefined
       });
@@ -633,6 +634,36 @@ date: ${note.date}
     e.preventDefault();
     setIsUpgrading(true);
     setUpgradeError('');
+
+    if (proPassword.trim()) {
+      try {
+        const res = await fetch('/api/upgrade/redeem', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: proPassword.trim() })
+        });
+        
+        if (res.ok) {
+          toast.success("Pro Token Accepted! Welcome to Pro.");
+          setTier('pro');
+          setFreeUsageExceeded(false);
+          setShowUpgradeModal(false);
+          setProPassword('');
+          setIsUpgrading(false);
+          return;
+        } else {
+          const data = await res.json();
+          setUpgradeError(data.error || "Invalid or expired token");
+          setIsUpgrading(false);
+          return;
+        }
+      } catch (err) {
+        setUpgradeError("Failed to verify token. Please try again.");
+        setIsUpgrading(false);
+        return;
+      }
+    }
+
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -818,7 +849,7 @@ date: ${note.date}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
             onClick={(e) => {
-              if (e.target === e.currentTarget && !freeUsageExceeded) setShowUpgradeModal(false);
+              if (e.target === e.currentTarget) setShowUpgradeModal(false);
             }}
           >
             <motion.div
@@ -831,15 +862,13 @@ date: ${note.date}
               {/* Subtle top glare */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
 
-              {!freeUsageExceeded && (
-                <button
-                  onClick={() => setShowUpgradeModal(false)}
-                  className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
-                >
-                  <span className="sr-only">Close</span>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              )}
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
 
               <div className="flex flex-col items-center mb-8 relative">
                 <div className="relative w-16 h-16 flex items-center justify-center mb-5">
@@ -878,6 +907,15 @@ date: ${note.date}
                       {upgradeError}
                     </div>
                   )}
+
+                  <input
+                    type="text"
+                    value={proPassword}
+                    onChange={e => setProPassword(e.target.value)}
+                    placeholder="Got a Pro Token? (optional)"
+                    className="w-full bg-[#111] border border-white/5 rounded-xl px-4 py-3 text-[14px] text-white placeholder:text-neutral-500 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all font-sans text-center"
+                    disabled={isUpgrading}
+                  />
 
                   <button
                     type="submit"
@@ -1136,7 +1174,7 @@ date: ${note.date}
             <Mic className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-black' : 'text-white'}`} />
           </div>
           <h1 className={`text-[13px] font-semibold tracking-wide hidden md:block whitespace-nowrap overflow-hidden ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>
-            Henry AI | Meeting
+            Meetly | HenryAI
           </h1>
         </Link>
 
@@ -1241,6 +1279,23 @@ date: ${note.date}
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                       </span>
                       <span>Recording</span>
+                    </div>
+                  )}
+
+                  {tier === 'free' && (
+                    <div 
+                      onClick={() => setShowUpgradeModal(true)}
+                      className={`cursor-pointer flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-md border uppercase tracking-widest transition-colors shadow-sm ml-1 ${
+                        900 - freeUsageTime < 180 
+                          ? 'text-red-500 bg-red-500/10 border-red-500/30 animate-pulse' 
+                          : theme === 'dark' 
+                            ? 'text-amber-400 bg-amber-400/10 border-amber-400/20 hover:bg-amber-400/20' 
+                            : 'text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100'
+                      }`}
+                      title="Upgrade to Pro for unlimited transcription"
+                    >
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <span className="whitespace-nowrap">{Math.max(0, Math.floor((900 - freeUsageTime) / 60))}:{String(Math.max(0, 900 - freeUsageTime) % 60).padStart(2, '0')}&nbsp;FREE</span>
                     </div>
                   )}
 
