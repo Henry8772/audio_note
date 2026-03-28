@@ -893,11 +893,11 @@ date: ${note.date}
                   </div>
                   <div className="flex items-center text-[13px] text-neutral-300">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-3 shrink-0" />
-                    <span>Advanced AI summary models (GPT-4o)</span>
+                    <span>Best-in-class noise cancellation</span>
                   </div>
                   <div className="flex items-center text-[13px] text-neutral-300">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-3 shrink-0" />
-                    <span>Priority secure data storage</span>
+                    <span>Real-time translation (60+ languages)</span>
                   </div>
                 </div>
 
@@ -922,7 +922,7 @@ date: ${note.date}
                     disabled={isUpgrading}
                     className="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-[14px] font-medium rounded-xl text-black bg-white hover:bg-neutral-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]"
                   >
-                    {isUpgrading ? <Loader2 className="w-5 h-5 animate-spin text-black/70" /> : "Upgrade via Stripe"}
+                    {isUpgrading ? <Loader2 className="w-5 h-5 animate-spin text-black/70" /> : proPassword.trim() ? "Upgrade via Token" : "Upgrade via Stripe"}
                   </button>
                 </form>
               </div>
