@@ -82,10 +82,7 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, [isListening, stopListening, demoFinished]);
 
-    if (importCount > 0) {
-      alert(`Successfully imported ${importCount} note(s)!`);
-    } else {
-      alert("No valid new notes found to import.");
+
   // Auto-scroll demo transcript
   useEffect(() => {
     if (demoTranscriptRef.current) {
@@ -130,7 +127,6 @@ export default function LandingPage() {
              </Link>
           </div>
         </div>
-      </aside>
       </nav>
 
       {/* Hero Section */}
@@ -312,14 +308,6 @@ export default function LandingPage() {
                       </Link>
                     )}
                   </div>
-                </div>
-
-                {/* Note Detail Column */}
-                <div className="flex-1 flex flex-col h-full bg-black relative">
-                  {!activeNote ? (
-                    <div className="h-full flex flex-col items-center justify-center text-neutral-600">
-                      <Clock className="w-12 h-12 mb-4 opacity-20 text-neutral-400" />
-                      <p className="text-sm font-medium text-neutral-400">Select a note to view</p>
                 ) : (
                   <div className="space-y-4">
                     {transcriptItems.map((item, idx) => (
