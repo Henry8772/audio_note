@@ -45,6 +45,10 @@ interface AppState {
   freeUsageTime: number;
   freeUsageExceeded: boolean;
 
+  // Theme State
+  theme: 'light' | 'dark';
+  setTheme: (theme: 'light' | 'dark') => void;
+
   // Navigation State
   activeView: 'record' | 'notes';
   
@@ -113,6 +117,7 @@ export const useAppStore = create<AppState>()(
       tier: 'free',
       freeUsageTime: 0,
       freeUsageExceeded: false,
+      theme: 'dark',
       activeView: 'record',
       savedNotes: [],
       liveSessionId: null,
@@ -138,6 +143,7 @@ export const useAppStore = create<AppState>()(
       setTier: (tier) => set({ tier }),
       incrementFreeUsageTime: (seconds) => set((state) => ({ freeUsageTime: state.freeUsageTime + seconds })),
       setFreeUsageExceeded: (val) => set({ freeUsageExceeded: val }),
+      setTheme: (theme) => set({ theme }),
       setLiveSession: (id, hostId) => set({ liveSessionId: id, liveSessionHostId: hostId }),
       
       addOrUpdateTranscriptItem: (item) => {
@@ -190,6 +196,7 @@ export const useAppStore = create<AppState>()(
         isSystemAudioEnabled: state.isSystemAudioEnabled,
         isAuthenticated: state.isAuthenticated,
         userEmail: state.userEmail,
+        theme: state.theme,
         freeUsageTime: state.freeUsageTime,
         freeUsageExceeded: state.freeUsageExceeded
       }),

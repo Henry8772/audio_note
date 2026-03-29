@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Mic, ArrowRight, Globe, Share2, Layers, CheckCircle2, Play, Square, Loader2, Lock } from "lucide-react";
+import { Mic, ArrowRight, Globe, Share2, Layers, CheckCircle2, Check, X, Zap, Play, Square, Loader2, Lock } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useAudioRealtime } from "@/lib/useAudioRealtime";
 import { joinWaitlist } from "@/app/actions/waitlist";
@@ -107,7 +107,7 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.2)]">
               <Mic className="w-4 h-4 text-black" />
             </div>
-            <span className="font-semibold tracking-wide text-sm">Meeting by HenryAI</span>
+            <span className="font-semibold tracking-wide text-sm">Meetly</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
@@ -147,13 +147,13 @@ export default function LandingPage() {
           </a>
           <br />
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-8 leading-[1.1]">
-            Meetings, <br />
+            World-class <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-300 to-neutral-600">
-              perfectly captured.
+              transcription.
             </span>
           </h1>
           <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
-            Stay entirely present. Meeting by HenryAI transcribes, translates, and summarizes your live sessions across multiple languages, in real-time.
+            We turn your $5 microphone into an $800 studio setup. Experience best-in-class noise cancellation, real-time translation, and zero lag.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -197,9 +197,9 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.15)]">
                   <Mic className="w-8 h-8 text-blue-400" />
                 </div>
-                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Real-time <br />Transcription</h3>
+                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Perfect Audio, <br />Anywhere.</h3>
                 <p className="text-neutral-400 leading-relaxed text-lg font-light">
-                  Flawless precision as they speak. Our ultra-low latency model captures every word immediately without lag, so you can stay entirely focused on the conversation.
+                  Stop worrying about input devices. Our engine features best-in-class noise cancellation to deliver pristine transcripts, even from a cheap laptop mic.
                 </p>
                 <div className="pt-4">
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
@@ -239,13 +239,13 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center border border-purple-500/20 shadow-[0_0_30px_rgba(168,85,247,0.15)]">
                   <Globe className="w-8 h-8 text-purple-400" />
                 </div>
-                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Live <br />Translation</h3>
+                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">60+ Languages.<br />Zero Wait.</h3>
                 <p className="text-neutral-400 leading-relaxed text-lg font-light">
-                  Break language barriers instantly. Speak in English and have everyone read in Spanish, French, Chinese, or Japanese in real-time.
+                  Break language barriers instantly. We support over 60 languages with near-zero latency real-time translation.
                 </p>
                 <div className="pt-4">
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
-                    <CheckCircle2 className="w-4 h-4 text-purple-500" /> 50+ Languages Supported
+                    <CheckCircle2 className="w-4 h-4 text-purple-500" /> 60+ Languages Supported
                   </div>
                 </div>
               </motion.div>
@@ -280,9 +280,9 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
                   <Share2 className="w-8 h-8 text-emerald-400" />
                 </div>
-                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Live Meeting <br />Session</h3>
+                <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Sync Global <br />Teams.</h3>
                 <p className="text-neutral-400 leading-relaxed text-lg font-light">
-                  Open a session, share the unique link, and let participants read the transcription stream live from their own devices across the globe.
+                  Create live sessions instantly. Invite others to watch real-time results and dive into the conversation together.
                 </p>
                 <div className="pt-4">
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
@@ -308,6 +308,74 @@ export default function LandingPage() {
                 </div>
               </motion.div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Competitor Comparison */}
+      <section className="py-24 px-6 relative border-y border-neutral-900 bg-[#020202]">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 text-white">How we stack up</h2>
+            <p className="text-neutral-400 text-lg">See why teams are switching to Meetly for flawless execution.</p>
+          </div>
+          
+          <div className="overflow-x-auto border border-neutral-800 rounded-3xl bg-[#050505] shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-neutral-800 bg-[#0a0a0a]">
+                  <th className="p-6 font-medium text-neutral-400 w-1/4">Feature</th>
+                  <th className="p-6 font-semibold text-white text-lg w-1/4 border-l border-neutral-800 bg-white/5 relative">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
+                    Meetly
+                  </th>
+                  <th className="p-6 font-medium text-neutral-500 w-1/4 border-l border-neutral-800">OpenAI Whisper</th>
+                  <th className="p-6 font-medium text-neutral-500 w-1/4 border-l border-neutral-800">Deepgram</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800 text-sm">
+                <tr>
+                  <td className="p-6 text-neutral-300 font-medium">Latency</td>
+                  <td className="p-6 border-l border-neutral-800 bg-white/[0.02]">
+                    <div className="flex items-center gap-2 text-emerald-400 font-semibold">
+                      <Zap className="w-4 h-4" /> Near-Zero
+                    </div>
+                  </td>
+                  <td className="p-6 text-neutral-500 border-l border-neutral-800">Batch / Delayed</td>
+                  <td className="p-6 text-neutral-500 border-l border-neutral-800">Low</td>
+                </tr>
+                <tr>
+                  <td className="p-6 text-neutral-300 font-medium">Audio Input Target</td>
+                  <td className="p-6 border-l border-neutral-800 bg-white/[0.02]">
+                    <div className="flex items-center gap-2 text-white font-medium">
+                      <Check className="w-4 h-4 text-emerald-400" /> Enhances $5 mics
+                    </div>
+                  </td>
+                  <td className="p-6 text-neutral-500 border-l border-neutral-800">Requires clear audio</td>
+                  <td className="p-6 text-neutral-500 border-l border-neutral-800">Requires clear audio</td>
+                </tr>
+                <tr>
+                  <td className="p-6 text-neutral-300 font-medium">Noise Cancellation</td>
+                  <td className="p-6 border-l border-neutral-800 bg-white/[0.02]">
+                    <div className="flex items-center gap-2 text-white font-medium">
+                      <Check className="w-4 h-4 text-emerald-400" /> Built-in Best-in-class
+                    </div>
+                  </td>
+                  <td className="p-6 text-neutral-500 border-l border-neutral-800"><X className="w-4 h-4" /> None</td>
+                  <td className="p-6 text-neutral-500 border-l border-neutral-800"><X className="w-4 h-4" /> Basic</td>
+                </tr>
+                <tr>
+                  <td className="p-6 text-neutral-300 font-medium">Real-time Translation</td>
+                  <td className="p-6 border-l border-neutral-800 bg-white/[0.02]">
+                    <div className="flex items-center gap-2 text-white font-medium">
+                      <Check className="w-4 h-4 text-emerald-400" /> 60+ Languages
+                    </div>
+                  </td>
+                  <td className="p-6 text-neutral-500 border-l border-neutral-800"><X className="w-4 h-4" /> Varies/Delayed</td>
+                  <td className="p-6 text-neutral-500 border-l border-neutral-800"><X className="w-4 h-4" /> English-first</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -439,13 +507,35 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Final CTA Section */}
+      <section className="py-24 md:py-32 px-6 relative border-t border-neutral-900 bg-black overflow-hidden flex items-center justify-center">
+        {/* Glow effect */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-8 text-white">
+            Ready to upgrade your meetings?
+          </h2>
+          <p className="text-neutral-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+            Join professionals who have revolutionized their workflow with Meetly. Experience flawless real-time transcription and translation today.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/app"
+              className="bg-white text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-neutral-200 hover:scale-105 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2"
+            >
+              Start for Free <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-neutral-900 bg-[#050505]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <Mic className="w-5 h-5 text-neutral-500" />
-            <span className="font-semibold text-neutral-500 tracking-wide text-sm">Meeting by HenryAI</span>
+            <span className="font-semibold text-neutral-500 tracking-wide text-sm">Meetly by HenryAI</span>
           </div>
           <p className="text-sm text-neutral-600">
             &copy; {new Date().getFullYear()} meeting.henryai.studio. All rights reserved.

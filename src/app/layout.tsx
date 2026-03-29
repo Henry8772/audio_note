@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "./ConvexClientProvider";
 import { Toaster } from "sonner";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Meeting by HenryAI",
+  title: "Meetly by HenryAI",
   description: "AI-powered live meeting transcription and intelligence.",
 };
 
@@ -29,8 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ConvexClientProvider>{children}</ConvexClientProvider>
-        <Toaster theme="dark" position="bottom-right" />
+        <ThemeProvider>
+          <ConvexClientProvider>{children}</ConvexClientProvider>
+          <Toaster theme="system" position="bottom-right" />
+        </ThemeProvider>
       </body>
     </html>
   );
