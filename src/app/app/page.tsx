@@ -114,6 +114,7 @@ export default function Home() {
   const [showAddViewModal, setShowAddViewModal] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [translationSearch, setTranslationSearch] = useState("");
+  const [mobileTab, setMobileTab] = useState<'transcript' | 'translation'>('transcript');
 
   const filteredTranslationLanguages = AVAILABLE_LANGUAGES.filter(lang => 
     lang.label.toLowerCase().includes(translationSearch.toLowerCase()) || 
@@ -764,7 +765,36 @@ date: ${note.date}
   };
 
   return (
-    <div className={`h-screen w-full flex font-sans overflow-hidden ${theme === 'dark' ? 'bg-black text-neutral-200 selection:bg-neutral-800 selection:text-white' : 'bg-[#f4f4f5] text-neutral-800 selection:bg-neutral-200 selection:text-neutral-900'}`}>
+    <div className={`h-[100dvh] w-full flex flex-col md:flex-row font-sans overflow-hidden ${theme === 'dark' ? 'bg-black text-neutral-200 selection:bg-neutral-800 selection:text-white' : 'bg-[#f4f4f5] text-neutral-800 selection:bg-neutral-200 selection:text-neutral-900'}`}>
+      {/* Mobile Top Header */}
+      <div className={`md:hidden shrink-0 h-[60px] w-full flex items-center justify-between px-4 z-30 border-b ${theme === 'dark' ? 'bg-black border-neutral-800/80' : 'bg-white border-neutral-200'}`}>
+        <Link href="/" className="flex items-center gap-2 cursor-pointer">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-sm shrink-0 ${theme === 'dark' ? 'bg-white' : 'bg-black'}`}>
+            <Mic className={`w-4 h-4 ${theme === 'dark' ? 'text-black' : 'text-white'}`} />
+          </div>
+          <span className={`text-[15px] font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>
+            Meetly
+          </span>
+        </Link>
+        <div className="flex items-center gap-3">
+          {isAuthenticated && userEmail ? (
+             <button
+               onClick={() => setShowSettingsModal(true)}
+               className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800' : 'bg-white text-neutral-500 hover:text-neutral-900 border border-neutral-200 shadow-sm'}`}
+             >
+               <Settings className="w-4 h-4" />
+             </button>
+          ) : (
+            <button
+               onClick={() => setShowAuthModal(true)}
+               className={`text-xs font-semibold px-4 py-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}
+            >
+              Sign In
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Auth Modal Overlay */}
       <AnimatePresence>
         {showAuthModal && !isAuthenticated && (
@@ -1236,7 +1266,7 @@ date: ${note.date}
 
 
       {/* Left Sidebar Navigation */}
-      <aside className={`w-16 md:w-56 h-full flex flex-col shrink-0 py-4 px-2 md:px-4 transition-all duration-300 z-20 ${theme === 'dark' ? 'bg-black border-r border-neutral-800/80' : 'bg-[#f4f4f5] border-r border-neutral-200'}`}>
+      <aside className={`hidden md:flex w-56 h-full flex-col shrink-0 py-4 px-4 transition-all duration-300 z-20 ${theme === 'dark' ? 'bg-black border-r border-neutral-800/80' : 'bg-[#f4f4f5] border-r border-neutral-200'}`}>
         <Link href="/" className="flex items-center gap-3 px-2 mb-8 mt-2 hover:opacity-80 transition-opacity cursor-pointer">
           <div className={`w-6 h-6 rounded-md flex items-center justify-center shadow-sm shrink-0 ${theme === 'dark' ? 'bg-white' : 'bg-black'}`}>
             <Mic className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-black' : 'text-white'}`} />
@@ -1335,10 +1365,28 @@ date: ${note.date}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col h-full w-full absolute inset-0"
             >
+              {/* Mobile Tab Switcher */}
+              <div className={`md:hidden shrink-0 px-4 py-2 border-b flex justify-center z-10 ${theme === 'dark' ? 'bg-[#0a0a0a] border-neutral-800/80' : 'bg-white border-neutral-200'}`}>
+                <div className={`flex p-1 rounded-xl border w-full max-w-[300px] ${theme === 'dark' ? 'bg-[#111] border-neutral-800' : 'bg-neutral-100/50 border-neutral-200/50'}`}>
+                  <button
+                    onClick={() => setMobileTab('transcript')}
+                    className={`flex items-center justify-center gap-2 flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${mobileTab === 'transcript' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : (theme === 'dark' ? 'text-neutral-500' : 'text-neutral-500')}`}
+                  >
+                    <List className="w-3.5 h-3.5" /> Transcript
+                  </button>
+                  <button
+                    onClick={() => setMobileTab('translation')}
+                    className={`flex items-center justify-center gap-2 flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${mobileTab === 'translation' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : (theme === 'dark' ? 'text-neutral-500' : 'text-neutral-500')}`}
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Notes
+                  </button>
+                </div>
+              </div>
+
               {/* Workspace */}
-              <div className="flex-1 grid grid-cols-1 grid-rows-2 lg:grid-cols-2 lg:grid-rows-1 min-h-0 relative">
+              <div className="flex-1 flex flex-col md:grid md:grid-cols-2 min-h-0 relative">
                 {/* Floating Dock */}
-                <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-2xl backdrop-blur-xl border ${theme === 'dark' ? 'bg-black/60 border-neutral-800/80 shadow-[0_0_40px_rgba(0,0,0,0.8)]' : 'bg-white/70 border-neutral-200 shadow-[0_4px_30px_rgba(0,0,0,0.1)]'}`}>
+                <div className={`absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-2xl backdrop-blur-xl border w-[96%] sm:w-auto overflow-x-auto no-scrollbar ${theme === 'dark' ? 'bg-black/80 md:bg-black/60 border-neutral-800/80 shadow-[0_0_40px_rgba(0,0,0,0.8)]' : 'bg-white/90 md:bg-white/70 border-neutral-200 shadow-[0_4px_30px_rgba(0,0,0,0.1)]'}`}>
 
                   {isListening && (
                     <div className="hidden sm:flex items-center gap-2 text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-2 py-1.5 rounded-md border border-emerald-400/20 uppercase tracking-widest mr-[-4px]">
@@ -1431,10 +1479,10 @@ date: ${note.date}
                     )}
                   </button>
 
-                  <div className={`w-[1px] h-6 mx-1 hidden sm:block ${theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-300'}`}></div>
+                  <div className={`w-[1px] h-6 mx-1 ${theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-300'}`}></div>
 
                   {/* Language Selector Dropdown (Dark Theme) */}
-                  <div ref={languageDropdownRef} className="relative group hidden sm:block">
+                  <div ref={languageDropdownRef} className="relative group shrink-0">
                     <button
                       type="button"
                       disabled={isListening}
@@ -1443,7 +1491,7 @@ date: ${note.date}
                         }`}
                     >
                       <div className="flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5" />
+                        <Globe className="w-3.5 h-3.5 hidden sm:block" />
                         <span className="text-[10px] sm:text-[11px] font-bold whitespace-nowrap">
                           {selectedLanguages.length === 0 ? "Auto" : selectedLanguages.length === 1 ? AVAILABLE_LANGUAGES.find(l => l.code === selectedLanguages[0])?.label : `${selectedLanguages.length} Selected`}
                         </span>
@@ -1507,30 +1555,30 @@ date: ${note.date}
                   {(() => {
                     if (isConnecting) {
                       return (
-                        <button disabled className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 border cursor-not-allowed ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-400' : 'bg-neutral-100/50 border-neutral-200 text-neutral-400'}`}>
+                        <button disabled className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 border cursor-not-allowed ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-400' : 'bg-neutral-100/50 border-neutral-200 text-neutral-400'}`}>
                           <Loader2 className="w-4 h-4 animate-spin" /> <span className="hidden sm:inline">Connecting</span>
                         </button>
                       );
                     }
                     if (isListening) {
                       return (
-                        <button onClick={stopListening} className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 border ${theme === 'dark' ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200 shadow-sm'}`}>
-                          <Square className="w-4 h-4 fill-current" /> Stop
+                        <button onClick={stopListening} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 border ${theme === 'dark' ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200 shadow-sm'}`}>
+                          <Square className="w-4 h-4 fill-current shrink-0" /> Stop
                         </button>
                       );
                     }
                     if (transcriptItems.length > 0) {
                       return (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end">
                           <button
                             onClick={() => {
                               if (!isAuthenticated) return setShowAuthModal(true);
                               if (!isMicEnabled && !isSystemAudioEnabled) return toast.error("Please enable Mic or System Audio to start.");
                               connect(true);
                             }}
-                            className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 border ${theme === 'dark' ? 'border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 shadow-[0_0_15px_rgba(69,143,255,0.15)]' : 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm'}`}
+                            className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 border ${theme === 'dark' ? 'border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 shadow-[0_0_15px_rgba(69,143,255,0.15)]' : 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm'}`}
                           >
-                            <Play className="w-4 h-4 fill-current" /> Resume
+                            <Play className="w-4 h-4 fill-current shrink-0" /> Resume
                           </button>
                           <div className={`w-[1px] h-6 mx-1 ${theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-300'}`}></div>
                           <button
@@ -1541,7 +1589,7 @@ date: ${note.date}
                                 connect(false);
                               }
                             }}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 border ${theme === 'dark' ? 'bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800 border-neutral-800' : 'bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm border-neutral-200'}`}
+                            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 border ${theme === 'dark' ? 'bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800 border-neutral-800' : 'bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm border-neutral-200'}`}
                           >
                             New
                           </button>
@@ -1555,16 +1603,16 @@ date: ${note.date}
                           if (!isMicEnabled && !isSystemAudioEnabled) return toast.error("Please enable Mic or System Audio to start.");
                           connect(false);
                         }}
-                        className={`flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${theme === 'dark' ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-neutral-900 text-white hover:bg-black shadow-[0_2px_15px_rgba(0,0,0,0.15)] border border-neutral-800'}`}
+                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${theme === 'dark' ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-neutral-900 text-white hover:bg-black shadow-[0_2px_15px_rgba(0,0,0,0.15)] border border-neutral-800'}`}
                       >
-                        <Mic className="w-4 h-4" /> Start
+                        <Mic className="w-4 h-4 shrink-0" /> Start
                       </button>
                     );
                   })()}
                 </div>
 
                 {/* Left Pane: Raw Transcript */}
-                <div className={`flex flex-col h-full min-h-0 overflow-hidden relative ${theme === 'dark' ? 'bg-[#0a0a0a] border-r border-neutral-800' : 'bg-white border-r border-neutral-200'}`}>
+                <div className={`${mobileTab === 'transcript' ? 'flex' : 'hidden'} md:flex flex-col h-full min-h-0 overflow-hidden relative ${theme === 'dark' ? 'bg-[#0a0a0a] border-r border-neutral-800' : 'bg-white border-r border-neutral-200'}`}>
                   <div className={`min-h-[48px] border-b flex items-center px-6 shrink-0 ${theme === 'dark' ? 'border-neutral-800/80 bg-black' : 'border-neutral-200/80 bg-[#f4f4f5]'}`}>
                     <h2 className={`text-[10px] font-semibold tracking-widest uppercase flex items-center gap-2 ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-600'}`}>
                       <List className="w-3.5 h-3.5" /> Live Transcript
@@ -1603,7 +1651,7 @@ date: ${note.date}
                 </div>
 
                 {/* Right Pane: Customizable Workspace Tabs */}
-                <div className={`flex flex-col h-full relative min-h-0 overflow-hidden ${theme === 'dark' ? 'bg-black border-l border-neutral-800/80' : 'bg-[#f4f4f5] border-l border-neutral-200'}`}>
+                <div className={`${mobileTab === 'translation' ? 'flex' : 'hidden'} md:flex flex-col h-full relative min-h-0 overflow-hidden ${theme === 'dark' ? 'bg-black border-l border-neutral-800/80' : 'bg-[#f4f4f5] border-l border-neutral-200'}`}>
                   <div className={`min-h-[48px] border-b flex items-center justify-between px-2 sm:px-4 ${theme === 'dark' ? 'border-neutral-800/80 bg-[#0a0a0a]' : 'border-neutral-200 bg-white'}`}>
 
                     {/* Tabs / Headers */}
@@ -1757,7 +1805,7 @@ date: ${note.date}
 
               <div className="flex-1 flex overflow-hidden min-h-0">
                 {/* Notes List Column */}
-                <div className="w-1/3 min-w-[300px] border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-full min-h-0">
+                <div className={`${activeNote ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 md:min-w-[300px] border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-full min-h-0`}>
                   <div className="p-4 border-b border-neutral-800/50 shrink-0">
                     <input
                       type="text"
@@ -1799,21 +1847,29 @@ date: ${note.date}
                   </div>
                 </div>
 
-                {/* Note Detail Column */}
-                <div className="flex-1 flex flex-col h-full bg-black relative min-w-0 min-h-0">
+{/* Note Detail Column */}
+                <div className={`${!activeNote ? 'hidden md:flex' : 'flex'} flex-1 flex flex-col h-full bg-black relative min-w-0 min-h-0`}>
                   {!activeNote ? (
                     <div className="h-full flex flex-col items-center justify-center text-neutral-600">
                       <Clock className="w-12 h-12 mb-4 opacity-20 text-neutral-400" />
                       <p className="text-sm font-medium text-neutral-400">Select a note to view</p>
                     </div>
                   ) : (
-                    <div className="flex flex-col h-full">
-                      <div className="h-16 px-8 border-b border-neutral-800/80 flex items-center justify-between shrink-0">
-                        <div>
-                          <h2 className="text-lg font-semibold text-white">{activeNote.title}</h2>
-                          <p className="text-[11px] text-neutral-500 mt-0.5">
-                            Recorded on {new Date(activeNote.date).toLocaleString()}
-                          </p>
+                    <div className="flex flex-col h-full w-full">
+                      <div className="h-16 px-4 md:px-8 border-b border-neutral-800/80 flex items-center justify-between shrink-0 gap-3">
+                        <div className="flex items-center gap-2 md:gap-0 min-w-0">
+                          <button
+                            onClick={() => setSelectedNoteId(null)}
+                            className="md:hidden p-2 -ml-2 text-neutral-500 hover:text-white transition-all rounded-md shrink-0"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                          </button>
+                          <div className="min-w-0 truncate">
+                            <h2 className="text-lg font-semibold text-white truncate">{activeNote.title}</h2>
+                            <p className="text-[11px] text-neutral-500 mt-0.5 truncate">
+                              Recorded on {new Date(activeNote.date).toLocaleString()}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -1880,6 +1936,48 @@ date: ${note.date}
 
         </AnimatePresence>
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className={`md:hidden shrink-0 w-full flex items-center justify-around px-2 pt-2 pb-5 z-40 border-t ${theme === 'dark' ? 'bg-black border-neutral-800/80' : 'bg-white border-neutral-200'}`}>
+        <button
+          onClick={() => setActiveView('record')}
+          className={`flex flex-col items-center gap-1 min-w-[64px] transition-all ${activeView === 'record'
+            ? (theme === 'dark' ? 'text-white' : 'text-neutral-900')
+            : (theme === 'dark' ? 'text-neutral-500 hover:text-neutral-400' : 'text-neutral-500 hover:text-neutral-700')
+            }`}
+        >
+          <div className={`p-1.5 rounded-full ${activeView === 'record' ? (theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-100') : 'bg-transparent'}`}>
+            <LayoutDashboard className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] font-medium">Record</span>
+        </button>
+        <button
+          onClick={() => setActiveView('notes')}
+          className={`relative flex flex-col items-center gap-1 min-w-[64px] transition-all ${activeView === 'notes'
+            ? (theme === 'dark' ? 'text-white' : 'text-neutral-900')
+            : (theme === 'dark' ? 'text-neutral-500 hover:text-neutral-400' : 'text-neutral-500 hover:text-neutral-700')
+            }`}
+        >
+          <div className={`p-1.5 rounded-full ${activeView === 'notes' ? (theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-100') : 'bg-transparent'}`}>
+            <Clock className="w-5 h-5" />
+            {savedNotes.length > 0 && (
+              <span className="absolute top-0 right-3 flex items-center justify-center bg-blue-500 text-white text-[9px] font-bold h-4 min-w-[16px] px-1 rounded-full border-2" style={{ borderColor: theme === 'dark' ? '#000' : '#fff' }}>
+                {savedNotes.length}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] font-medium">Notes</span>
+        </button>
+        <button
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          className={`flex flex-col items-center gap-1 min-w-[64px] transition-all ${theme === 'dark' ? 'text-neutral-500 hover:text-neutral-400' : 'text-neutral-500 hover:text-neutral-700'}`}
+        >
+          <div className="p-1.5 rounded-full bg-transparent">
+            {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+          </div>
+          <span className="text-[10px] font-medium">{theme === 'dark' ? 'Dark' : 'Light'}</span>
+        </button>
+      </nav>
     </div>
   );
 }
