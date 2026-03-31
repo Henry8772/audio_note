@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Monitor, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play, Search } from "lucide-react";
+import { Mic, MicOff, Monitor, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download, Upload, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play, Search, Copy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -108,11 +108,13 @@ export default function Home() {
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
   const translatedTranscriptContainerRef = useRef<HTMLDivElement>(null);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
+  const micDropdownRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
   const [showAddViewModal, setShowAddViewModal] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+  const [showMicDropdown, setShowMicDropdown] = useState(false);
   const [translationSearch, setTranslationSearch] = useState("");
   const [mobileTab, setMobileTab] = useState<'transcript' | 'translation'>('transcript');
 
@@ -127,14 +129,17 @@ export default function Home() {
       if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target as Node)) {
         setShowLanguageDropdown(false);
       }
+      if (micDropdownRef.current && !micDropdownRef.current.contains(event.target as Node)) {
+        setShowMicDropdown(false);
+      }
     }
-    if (showLanguageDropdown) {
+    if (showLanguageDropdown || showMicDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showLanguageDropdown]);
+  }, [showLanguageDropdown, showMicDropdown]);
 
   useEffect(() => {
     if (!activeWorkspaceId && workspaceViews.length > 0) {
@@ -1415,7 +1420,7 @@ date: ${note.date}
                     </div>
                   )}
 
-                  <div className={`flex items-center gap-1 p-1 rounded-xl border hidden sm:flex ${theme === 'dark' ? 'bg-[#111] border-neutral-800' : 'bg-neutral-100/50 border-neutral-200/50'}`}>
+                  <div className={`flex items-center gap-1 p-1 rounded-xl border ${theme === 'dark' ? 'bg-[#111] border-neutral-800' : 'bg-neutral-100/50 border-neutral-200/50'}`}>
                     <button
                       onClick={() => setIsMicEnabled(!isMicEnabled)}
                       disabled={isListening}
@@ -1424,8 +1429,8 @@ date: ${note.date}
                         : (theme === 'dark' ? 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900' : 'text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200/50')
                         } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      {isMicEnabled ? <Mic className="w-3.5 h-3.5 mr-1.5" /> : <MicOff className="w-3.5 h-3.5 mr-1.5" />}
-                      Mic
+                      {isMicEnabled ? <Mic className="w-3.5 h-3.5 sm:mr-1.5" /> : <MicOff className="w-3.5 h-3.5 sm:mr-1.5" />}
+                      <span className="hidden sm:inline">Mic</span>
                     </button>
                     <button
                       onClick={() => setIsSystemAudioEnabled(!isSystemAudioEnabled)}
@@ -1435,25 +1440,65 @@ date: ${note.date}
                         : (theme === 'dark' ? 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900' : 'text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200/50')
                         } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <Monitor className="w-3.5 h-3.5 mr-1.5" />
-                      System
+                      <Monitor className="w-3.5 h-3.5 sm:mr-1.5" />
+                      <span className="hidden sm:inline">System</span>
                     </button>
                   </div>
 
                   {isMicEnabled && (
-                    <select
-                      value={selectedMicId}
-                      onChange={(e) => setSelectedMicId(e.target.value)}
-                      className={`text-[11px] font-medium px-2 sm:px-3 py-2 rounded-xl border outline-none transition-colors max-w-[90px] sm:max-w-[150px] truncate cursor-pointer appearance-none ${theme === 'dark' ? 'bg-neutral-900 text-neutral-300 border-neutral-700 hover:text-white' : 'bg-white text-neutral-700 border-neutral-300 hover:text-neutral-900 shadow-[0_2px_10px_rgba(0,0,0,0.05)]'}`}
-                      disabled={isListening}
-                    >
-                      <option value="default">Default Mic</option>
-                      {availableMics.map(mic => (
-                        <option key={mic.deviceId} value={mic.deviceId}>
-                          {mic.label || `Mic (${mic.deviceId.slice(0, 4)})`}
-                        </option>
-                      ))}
-                    </select>
+                    <div ref={micDropdownRef} className="relative group shrink-0">
+                      <button
+                        type="button"
+                        disabled={isListening}
+                        onClick={() => setShowMicDropdown(!showMicDropdown)}
+                        className={`text-[11px] font-medium px-2 sm:px-3 py-2 rounded-xl border outline-none transition-colors max-w-[90px] sm:max-w-[150px] truncate cursor-pointer appearance-none flex items-center justify-between gap-1.5 ${showMicDropdown ? (theme === 'dark' ? "bg-neutral-800 text-white border-neutral-700/50 shadow-sm" : "bg-white text-neutral-900 border-neutral-300 shadow-sm") : isListening ? (theme === 'dark' ? "bg-neutral-900 text-neutral-600 border-neutral-800 cursor-not-allowed" : "bg-neutral-100/80 text-neutral-400 border-neutral-200 cursor-not-allowed") : (theme === 'dark' ? 'bg-neutral-900 text-neutral-300 border-neutral-700 hover:text-white' : 'bg-white text-neutral-700 border-neutral-300 hover:text-neutral-900 shadow-[0_2px_10px_rgba(0,0,0,0.05)]')}`}
+                      >
+                        <span className="truncate flex-1 text-left">
+                          {selectedMicId === "default" ? "Default Mic" : (availableMics.find(m => m.deviceId === selectedMicId)?.label || "Selected Mic")}
+                        </span>
+                      </button>
+
+                      <AnimatePresence>
+                        {showMicDropdown && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            transition={{ duration: 0.15, ease: "easeOut" }}
+                            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-[220px] bg-[#111] border border-neutral-800 rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] overflow-hidden z-[60]"
+                          >
+                            <div className="p-3 border-b border-neutral-800 bg-neutral-900/50 flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Select Mic</span>
+                            </div>
+                            <div className="p-2 max-h-[200px] overflow-y-auto no-scrollbar flex flex-col gap-1">
+                              <button
+                                onClick={() => {
+                                  setSelectedMicId("default");
+                                  setShowMicDropdown(false);
+                                }}
+                                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[12px] font-medium transition-colors ${selectedMicId === "default" ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200'}`}
+                              >
+                                <span>Default Mic</span>
+                                {selectedMicId === "default" && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
+                              </button>
+                              {availableMics.map(mic => (
+                                <button
+                                  key={mic.deviceId}
+                                  onClick={() => {
+                                    setSelectedMicId(mic.deviceId);
+                                    setShowMicDropdown(false);
+                                  }}
+                                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[12px] font-medium transition-colors ${selectedMicId === mic.deviceId ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200'}`}
+                                >
+                                  <span className="truncate max-w-[150px] text-left">{mic.label || `Mic (${mic.deviceId.slice(0, 4)})`}</span>
+                                  {selectedMicId === mic.deviceId && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   )}
 
                   <button
@@ -1469,12 +1514,12 @@ date: ${note.date}
                     {liveSessionId ? (
                       <>
                         <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                        <span>Live</span>
+                        <span className="hidden sm:inline">Live</span>
                       </>
                     ) : (
                       <>
                         {isSharingLive ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RadioTower className="w-3.5 h-3.5" />}
-                        <span>Share</span>
+                        <span className="hidden sm:inline">Share</span>
                       </>
                     )}
                   </button>
@@ -1487,12 +1532,12 @@ date: ${note.date}
                       type="button"
                       disabled={isListening}
                       onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                      className={`flex items-center justify-between min-w-[100px] gap-2 px-3 py-1.5 rounded-lg uppercase font-medium text-xs transition-all outline-none border ${showLanguageDropdown ? (theme === 'dark' ? "bg-neutral-800 text-white border-neutral-700/50 shadow-sm" : "bg-white text-neutral-900 border-neutral-300 shadow-sm") : isListening ? (theme === 'dark' ? "bg-neutral-900 text-neutral-600 border-neutral-800 cursor-not-allowed" : "bg-neutral-100/80 text-neutral-400 border-neutral-200 cursor-not-allowed") : (theme === 'dark' ? "bg-[#111] text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900 border-transparent hover:border-neutral-800" : "bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 border-neutral-200 shadow-[0_2px_10px_rgba(0,0,0,0.05)]")
+                      className={`flex items-center justify-center sm:justify-between min-w-0 sm:min-w-[100px] gap-2 px-3 py-1.5 rounded-lg uppercase font-medium text-xs transition-all outline-none border ${showLanguageDropdown ? (theme === 'dark' ? "bg-neutral-800 text-white border-neutral-700/50 shadow-sm" : "bg-white text-neutral-900 border-neutral-300 shadow-sm") : isListening ? (theme === 'dark' ? "bg-neutral-900 text-neutral-600 border-neutral-800 cursor-not-allowed" : "bg-neutral-100/80 text-neutral-400 border-neutral-200 cursor-not-allowed") : (theme === 'dark' ? "bg-[#111] text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900 border-transparent hover:border-neutral-800" : "bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 border-neutral-200 shadow-[0_2px_10px_rgba(0,0,0,0.05)]")
                         }`}
                     >
                       <div className="flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 hidden sm:block" />
-                        <span className="text-[10px] sm:text-[11px] font-bold whitespace-nowrap">
+                        <Globe className="w-3.5 h-3.5" />
+                        <span className="hidden sm:block text-[10px] sm:text-[11px] font-bold whitespace-nowrap">
                           {selectedLanguages.length === 0 ? "Auto" : selectedLanguages.length === 1 ? AVAILABLE_LANGUAGES.find(l => l.code === selectedLanguages[0])?.label : `${selectedLanguages.length} Selected`}
                         </span>
                       </div>
@@ -1563,7 +1608,7 @@ date: ${note.date}
                     if (isListening) {
                       return (
                         <button onClick={stopListening} className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 border ${theme === 'dark' ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200 shadow-sm'}`}>
-                          <Square className="w-4 h-4 fill-current shrink-0" /> Stop
+                          <Square className="w-4 h-4 fill-current shrink-0" /> <span className="hidden sm:inline">Stop</span>
                         </button>
                       );
                     }
@@ -1578,7 +1623,7 @@ date: ${note.date}
                             }}
                             className={`flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 border ${theme === 'dark' ? 'border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 shadow-[0_0_15px_rgba(69,143,255,0.15)]' : 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm'}`}
                           >
-                            <Play className="w-4 h-4 fill-current shrink-0" /> Resume
+                            <Play className="w-4 h-4 fill-current shrink-0" /> <span className="hidden sm:inline">Resume</span>
                           </button>
                           <div className={`w-[1px] h-6 mx-1 ${theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-300'}`}></div>
                           <button
@@ -1591,7 +1636,8 @@ date: ${note.date}
                             }}
                             className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 border ${theme === 'dark' ? 'bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800 border-neutral-800' : 'bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm border-neutral-200'}`}
                           >
-                            New
+                            <span className="hidden sm:inline">New</span>
+                            <span className="sm:hidden text-xs">New</span>
                           </button>
                         </div>
                       );
@@ -1605,7 +1651,7 @@ date: ${note.date}
                         }}
                         className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${theme === 'dark' ? 'bg-white text-black hover:bg-neutral-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'bg-neutral-900 text-white hover:bg-black shadow-[0_2px_15px_rgba(0,0,0,0.15)] border border-neutral-800'}`}
                       >
-                        <Mic className="w-4 h-4 shrink-0" /> Start
+                        <Mic className="w-4 h-4 shrink-0" /> <span className="hidden sm:inline">Start</span>
                       </button>
                     );
                   })()}
@@ -1613,10 +1659,23 @@ date: ${note.date}
 
                 {/* Left Pane: Raw Transcript */}
                 <div className={`${mobileTab === 'transcript' ? 'flex' : 'hidden'} md:flex flex-col h-full min-h-0 overflow-hidden relative ${theme === 'dark' ? 'bg-[#0a0a0a] border-r border-neutral-800' : 'bg-white border-r border-neutral-200'}`}>
-                  <div className={`min-h-[48px] border-b flex items-center px-6 shrink-0 ${theme === 'dark' ? 'border-neutral-800/80 bg-black' : 'border-neutral-200/80 bg-[#f4f4f5]'}`}>
+                  <div className={`min-h-[48px] border-b flex items-center justify-between px-6 shrink-0 ${theme === 'dark' ? 'border-neutral-800/80 bg-black' : 'border-neutral-200/80 bg-[#f4f4f5]'}`}>
                     <h2 className={`text-[10px] font-semibold tracking-widest uppercase flex items-center gap-2 ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-600'}`}>
                       <List className="w-3.5 h-3.5" /> Live Transcript
                     </h2>
+                    {transcriptItems.length > 0 && (
+                      <button
+                        onClick={() => {
+                          const text = transcriptItems.map(item => item.text).join('\n\n');
+                          navigator.clipboard.writeText(text);
+                          toast.success("Transcript copied to clipboard!");
+                        }}
+                        className={`flex items-center gap-1.5 text-[10px] uppercase font-bold px-2 py-1 rounded-md transition-all ${theme === 'dark' ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-500 hover:text-black hover:bg-neutral-200'}`}
+                        title="Copy Transcript"
+                      >
+                        <Copy className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Copy</span>
+                      </button>
+                    )}
                   </div>
                   <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-6 min-h-0" ref={transcriptContainerRef}>
                     {transcriptItems.length === 0 ? (
@@ -1633,14 +1692,22 @@ date: ${note.date}
                           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                           key={item.id + idx} className="flex flex-col items-start w-full"
                         >
-                          <div className={`p-4 rounded-xl border w-full flex flex-col gap-1.5 shadow-sm ${item.role === 'user'
-                            ? (theme === 'dark' ? 'bg-[#151515] border-neutral-800/80' : 'bg-[#f4f4f5] border-neutral-200/80')
-                            : (theme === 'dark' ? 'bg-[#0f172a]/40 border-blue-900/30' : 'bg-blue-50/50 border-blue-200/50')
+                          <div className={`relative p-4 rounded-2xl border w-full flex flex-col gap-1.5 transition-all duration-700 overflow-hidden ${!item.isFinal 
+                            ? (theme === 'dark' ? 'bg-white/5 backdrop-blur-2xl border-white/10 shadow-[0_8px_30px_rgba(255,255,255,0.04)] scale-[1.01]' : 'bg-white/60 backdrop-blur-2xl border-neutral-300 shadow-[0_8px_30px_rgba(0,0,0,0.06)] scale-[1.01]')
+                            : (theme === 'dark' ? (item.role === 'user' ? 'bg-[#151515] border-neutral-800/80 shadow-sm' : 'bg-[#0f172a]/40 border-blue-900/30 shadow-sm') : (item.role === 'user' ? 'bg-[#f4f4f5] border-neutral-200/80 shadow-sm' : 'bg-blue-50/50 border-blue-200/50 shadow-sm'))
                             }`}>
-                            <span className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${item.role === 'user' ? 'text-neutral-500' : 'text-blue-500'}`}>
+                            
+                            {!item.isFinal && (
+                              <div className="absolute inset-0 pointer-events-none rounded-2xl z-0">
+                                <div className={`absolute inset-0 opacity-50 ${theme === 'dark' ? 'bg-gradient-to-tr from-white/5 via-white/10 to-transparent' : 'bg-gradient-to-tr from-black/5 via-transparent to-white/40'} animate-pulse rounded-2xl`} />
+                                <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/20 pointer-events-none mix-blend-overlay animate-pulse" />
+                              </div>
+                            )}
+
+                            <span className={`relative z-10 text-[9px] font-bold uppercase tracking-widest mb-1 ${item.role === 'user' ? 'text-neutral-500' : 'text-blue-500'}`}>
                               {item.role === 'user' ? 'Live Room' : 'AI Assistant'}
                             </span>
-                            <div className={`text-[17px] leading-[1.8] whitespace-pre-wrap break-words font-medium prose prose-p:my-2 prose-p:leading-[1.8] max-w-none ${theme === 'dark' ? 'prose-invert' : ''} ${item.isFinal ? (theme === 'dark' ? 'text-white' : 'text-neutral-900') : (theme === 'dark' ? 'text-neutral-400 italic' : 'text-neutral-500 italic')}`}>
+                            <div className={`relative z-10 text-[17px] leading-[1.8] whitespace-pre-wrap break-words font-medium prose prose-p:my-2 prose-p:leading-[1.8] max-w-none ${theme === 'dark' ? 'prose-invert' : ''} ${item.isFinal ? (theme === 'dark' ? 'text-white' : 'text-neutral-900') : (theme === 'dark' ? 'text-neutral-400 italic' : 'text-neutral-500 italic')}`}>
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
                             </div>
                           </div>
@@ -1687,13 +1754,42 @@ date: ${note.date}
                     {/* Action buttons (Save, Take Note) */}
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-4">
                       <button
+                        onClick={() => {
+                          const view = workspaceViews.find(v => v.id === activeWorkspaceId);
+                          if (!view) return;
+                          if (view.type === 'ai_notes') {
+                            const text = summaries[view.language || 'en'];
+                            if (text) {
+                              navigator.clipboard.writeText(text);
+                              toast.success("Summary copied to clipboard!");
+                            } else {
+                              toast.error("Nothing to copy yet.");
+                            }
+                          } else if (view.type === 'live_translation') {
+                            const text = translatedTranscriptItems.map(item => item.text).join('\n\n');
+                            if (text) {
+                              navigator.clipboard.writeText(text);
+                              toast.success("Translation copied to clipboard!");
+                            } else {
+                              toast.error("Nothing to copy yet.");
+                            }
+                          }
+                        }}
+                        className={`text-[10px] px-2.5 py-1.5 rounded-md border flex items-center gap-1.5 font-bold uppercase tracking-widest transition-colors ${theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-neutral-300 hover:text-white hover:bg-neutral-800' : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm'}`}
+                        title="Copy Active Content"
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span className="hidden sm:inline">Copy</span>
+                      </button>
+
+                      <button
                         onClick={handleManualSave}
                         disabled={transcriptItems.length === 0}
-                        className={`text-[10px] px-2.5 py-1.5 rounded-md border flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hidden sm:flex transition-colors ${theme === 'dark' ? 'border-neutral-700 bg-[#111] text-white hover:bg-neutral-800' : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 shadow-sm'}`}
+                        className={`text-[10px] px-2.5 py-1.5 rounded-md border flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${theme === 'dark' ? 'border-neutral-700 bg-[#111] text-white hover:bg-neutral-800' : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 shadow-sm'}`}
                         title="Save Note to Library"
                       >
                         {isSaved ? <Save className="w-3 h-3 text-emerald-400" /> : <Save className="w-3 h-3 text-neutral-400" />}
-                        {isSaved ? "SAVED" : "SAVE"}
+                        <span className="hidden sm:inline">{isSaved ? "SAVED" : "SAVE"}</span>
                       </button>
 
                       <button
@@ -1707,7 +1803,7 @@ date: ${note.date}
                         className={`text-[10px] px-2.5 py-1.5 rounded-md border flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${theme === 'dark' ? 'border-neutral-700 bg-neutral-800 text-white hover:bg-neutral-700' : 'border-neutral-300 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-neutral-900 shadow-sm'}`}
                       >
                         {isSummarizing ? <Loader2 className="w-3 h-3 animate-spin text-neutral-400" /> : <FileText className="w-3 h-3 text-neutral-400" />}
-                        {isSummarizing ? "VALIDATING" : "TAKE NOTE"}
+                        <span className="hidden sm:inline">{isSummarizing ? "VALIDATING" : "TAKE NOTE"}</span>
                       </button>
                     </div>
                   </div>
@@ -1770,20 +1866,21 @@ date: ${note.date}
             <motion.div
               key="notes-view"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="flex flex-col h-full w-full absolute inset-0 bg-black"
+              className={`flex flex-col h-full w-full absolute inset-0 ${theme === 'dark' ? 'bg-black' : 'bg-[#f4f4f5]'}`}
             >
-              <header className="h-14 border-b border-neutral-800 bg-black flex items-center justify-between px-6 shrink-0 z-10">
-                <h2 className="text-sm font-medium text-white">Past Notes Library</h2>
+              <header className={`h-14 border-b flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 ${theme === 'dark' ? 'border-neutral-800 bg-black' : 'border-neutral-200 bg-[#f4f4f5]'}`}>
+                <h2 className={`text-[13px] sm:text-sm font-semibold tracking-wide truncate mr-2 ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>Notes Library</h2>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={handleExportNotes}
-                    className="text-[11px] px-3 py-1.5 rounded-md uppercase font-medium bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all"
+                    className={`flex items-center gap-1.5 text-[10px] sm:text-[11px] px-2.5 sm:px-3 py-1.5 rounded-lg uppercase font-bold transition-all shadow-sm border ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800' : 'bg-white border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'}`}
+                    title="Export All (ZIP)"
                   >
-                    Export All (ZIP)
+                    <Download className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">Export</span>
                   </button>
 
-                  {/* Hidden folder input */}
                   <input
                     type="file"
                     id="folder-import"
@@ -1796,26 +1893,29 @@ date: ${note.date}
                   />
                   <label
                     htmlFor="folder-import"
-                    className="text-[11px] px-3 py-1.5 rounded-md uppercase font-medium bg-white text-black hover:bg-neutral-200 shadow-sm cursor-pointer transition-all"
+                    className={`flex items-center gap-1.5 text-[10px] sm:text-[11px] px-2.5 sm:px-3 py-1.5 rounded-lg uppercase font-bold shadow-sm cursor-pointer transition-all ${theme === 'dark' ? 'bg-white text-black hover:bg-neutral-200' : 'bg-neutral-900 text-white hover:bg-black'}`}
+                    title="Import Folder"
                   >
-                    Import Folder
+                    <Upload className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">Import</span>
                   </label>
                 </div>
               </header>
 
               <div className="flex-1 flex overflow-hidden min-h-0">
                 {/* Notes List Column */}
-                <div className={`${activeNote ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 md:min-w-[300px] border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-full min-h-0`}>
-                  <div className="p-4 border-b border-neutral-800/50 shrink-0">
+                <div className={`${activeNote ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 md:min-w-[300px] border-r ${theme === 'dark' ? 'border-neutral-800 bg-[#0a0a0a]' : 'border-neutral-200 bg-white'} flex flex-col h-full min-h-0`}>
+                  <div className={`p-3 sm:p-4 border-b shrink-0 relative ${theme === 'dark' ? 'border-neutral-800/50' : 'border-neutral-100'}`}>
+                    <Search className={`absolute left-6 sm:left-7 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-400'}`} />
                     <input
                       type="text"
                       placeholder="Search notes..."
-                      className="w-full bg-[#111] border border-neutral-800 rounded-md px-3 py-2 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600 transition-colors"
+                      className={`w-full border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none transition-colors shadow-sm ${theme === 'dark' ? 'bg-[#111] border-neutral-800 text-neutral-100 placeholder:text-neutral-600 focus:border-neutral-600 focus:bg-neutral-900/50' : 'bg-[#f4f4f5] border-transparent text-neutral-900 placeholder:text-neutral-500 focus:border-neutral-300 focus:bg-white'}`}
                     />
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
                     {savedNotes.length === 0 ? (
-                      <div className="text-center py-10 text-neutral-600">
+                      <div className={`text-center py-10 ${theme === 'dark' ? 'text-neutral-600' : 'text-neutral-400'}`}>
                         <p className="text-sm">No notes saved yet.</p>
                       </div>
                     ) : (
@@ -1827,12 +1927,12 @@ date: ${note.date}
                             key={note.id}
                             onClick={() => setSelectedNoteId(note.id)}
                             className={`p-4 rounded-lg cursor-pointer transition-all border ${isSelectedDate
-                              ? 'bg-neutral-900 border-neutral-700'
-                              : 'bg-[#111] border-transparent hover:bg-neutral-900/50 hover:border-neutral-800'
+                              ? (theme === 'dark' ? 'bg-neutral-900 border-neutral-700' : 'bg-[#f4f4f5] border-neutral-300 shadow-sm')
+                              : (theme === 'dark' ? 'bg-[#111] border-transparent hover:bg-neutral-900/50 hover:border-neutral-800' : 'bg-white border-transparent hover:bg-neutral-50 hover:border-neutral-200')
                               }`}
                           >
                             <div className="flex items-start justify-between gap-4">
-                              <h3 className="text-sm font-medium text-neutral-200 line-clamp-1 break-all flex-1">{note.title}</h3>
+                              <h3 className={`text-sm font-medium line-clamp-1 break-all flex-1 ${theme === 'dark' ? 'text-neutral-200' : 'text-neutral-800'}`}>{note.title}</h3>
                               <span className="text-[10px] text-neutral-500 shrink-0 whitespace-nowrap mt-0.5">
                                 {d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                               </span>
@@ -1848,24 +1948,24 @@ date: ${note.date}
                 </div>
 
 {/* Note Detail Column */}
-                <div className={`${!activeNote ? 'hidden md:flex' : 'flex'} flex-1 flex flex-col h-full bg-black relative min-w-0 min-h-0`}>
+                <div className={`${!activeNote ? 'hidden md:flex' : 'flex'} flex-1 flex flex-col h-full ${theme === 'dark' ? 'bg-black' : 'bg-white'} relative min-w-0 min-h-0`}>
                   {!activeNote ? (
-                    <div className="h-full flex flex-col items-center justify-center text-neutral-600">
-                      <Clock className="w-12 h-12 mb-4 opacity-20 text-neutral-400" />
-                      <p className="text-sm font-medium text-neutral-400">Select a note to view</p>
+                    <div className={`h-full flex flex-col items-center justify-center ${theme === 'dark' ? 'text-neutral-600' : 'text-neutral-400'}`}>
+                      <Clock className={`w-12 h-12 mb-4 opacity-20 ${theme === 'dark' ? 'text-neutral-400' : 'text-neutral-500'}`} />
+                      <p className={`text-sm font-medium ${theme === 'dark' ? 'text-neutral-400' : 'text-neutral-500'}`}>Select a note to view</p>
                     </div>
                   ) : (
                     <div className="flex flex-col h-full w-full">
-                      <div className="h-16 px-4 md:px-8 border-b border-neutral-800/80 flex items-center justify-between shrink-0 gap-3">
+                      <div className={`h-16 px-4 md:px-8 border-b flex items-center justify-between shrink-0 gap-3 ${theme === 'dark' ? 'border-neutral-800/80' : 'border-neutral-200/80 bg-[#f4f4f5]'}`}>
                         <div className="flex items-center gap-2 md:gap-0 min-w-0">
                           <button
                             onClick={() => setSelectedNoteId(null)}
-                            className="md:hidden p-2 -ml-2 text-neutral-500 hover:text-white transition-all rounded-md shrink-0"
+                            className={`md:hidden p-2 -ml-2 transition-all rounded-md shrink-0 ${theme === 'dark' ? 'text-neutral-500 hover:text-white' : 'text-neutral-500 hover:text-black hover:bg-neutral-200'}`}
                           >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                           </button>
                           <div className="min-w-0 truncate">
-                            <h2 className="text-lg font-semibold text-white truncate">{activeNote.title}</h2>
+                            <h2 className={`text-lg font-semibold truncate ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>{activeNote.title}</h2>
                             <p className="text-[11px] text-neutral-500 mt-0.5 truncate">
                               Recorded on {new Date(activeNote.date).toLocaleString()}
                             </p>
@@ -1874,7 +1974,7 @@ date: ${note.date}
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleDownloadNote(activeNote)}
-                            className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-800 rounded-md transition-all"
+                            className={`p-2 rounded-md transition-all ${theme === 'dark' ? 'text-neutral-500 hover:text-white hover:bg-neutral-800' : 'text-neutral-500 hover:text-black hover:bg-neutral-200'}`}
                             title="Download note"
                           >
                             <Download className="w-4 h-4" />
@@ -1884,7 +1984,7 @@ date: ${note.date}
                               deleteSavedNote(activeNote.id);
                               setSelectedNoteId(null);
                             }}
-                            className="p-2 text-neutral-500 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all"
+                            className={`p-2 rounded-md transition-all ${theme === 'dark' ? 'text-neutral-500 hover:text-red-400 hover:bg-red-400/10' : 'text-neutral-500 hover:text-red-600 hover:bg-red-50'}`}
                             title="Delete note"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1895,14 +1995,14 @@ date: ${note.date}
                       <div className="flex-1 min-h-0 overflow-y-auto w-full">
                         {/* We will grid layout the exported notes if they span multiple langs */}
                         {Object.keys(activeNote.summaries).length > 0 && (
-                          <div className={`grid w-full min-h-full ${Object.keys(activeNote.summaries).length > 1 ? 'grid-cols-2 divide-x divide-neutral-800' : 'grid-cols-1'
+                          <div className={`grid w-full min-h-full ${Object.keys(activeNote.summaries).length > 1 ? `grid-cols-2 divide-x ${theme === 'dark' ? 'divide-neutral-800' : 'divide-neutral-200'}` : 'grid-cols-1'
                             }`}>
                             {Object.entries(activeNote.summaries).map(([lang, text]) => (
                               <div key={lang} className="p-8 lg:p-12">
                                 {Object.keys(activeNote.summaries).length > 1 && (
                                   <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6">Translation: {lang}</h3>
                                 )}
-                                <div className="prose prose-invert prose-neutral max-w-none prose-h1:text-xl prose-h1:font-semibold prose-h1:text-neutral-100 prose-h2:text-lg prose-h2:font-medium prose-h2:text-neutral-200 prose-p:text-[14px] prose-p:leading-relaxed prose-p:text-neutral-300 prose-a:text-white prose-ul:text-[14px] prose-ul:text-neutral-300">
+                                <div className={`prose max-w-none prose-h1:text-xl prose-h1:font-semibold prose-h2:text-lg prose-h2:font-medium prose-p:text-[14px] prose-p:leading-relaxed prose-ul:text-[14px] ${theme === 'dark' ? 'prose-invert prose-neutral prose-h1:text-neutral-100 prose-h2:text-neutral-200 prose-p:text-neutral-300 prose-a:text-white prose-ul:text-neutral-300' : 'prose-h1:text-neutral-900 prose-h2:text-neutral-800 prose-p:text-neutral-600 prose-a:text-blue-600 prose-ul:text-neutral-600'}`}>
                                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                     {text || "*Empty.*"}
                                   </ReactMarkdown>
@@ -1914,11 +2014,11 @@ date: ${note.date}
 
                         <div className="max-w-4xl mx-auto p-8 lg:p-12">
                           {activeNote.transcriptItems.length > 0 && (
-                            <div className={Object.keys(activeNote.summaries).length > 0 ? "mt-16 pt-8 border-t border-neutral-800/50" : ""}>
-                              <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest mb-6 border-b border-neutral-800/40 pb-4">Raw Transcript Timeline</h3>
+                            <div className={Object.keys(activeNote.summaries).length > 0 ? `mt-16 pt-8 border-t ${theme === 'dark' ? 'border-neutral-800/50' : 'border-neutral-200'}` : ""}>
+                              <h3 className={`text-[11px] font-semibold uppercase tracking-widest mb-6 border-b pb-4 ${theme === 'dark' ? 'text-neutral-500 border-neutral-800/40' : 'text-neutral-400 border-neutral-200'}`}>Raw Transcript Timeline</h3>
                               <div className="space-y-4">
                                 {activeNote.transcriptItems.map((item, idx) => (
-                                  <div key={idx} className="bg-[#111] p-4 rounded-lg border border-neutral-800/50 text-[13px] text-neutral-400 leading-relaxed whitespace-pre-wrap break-words shadow-sm">
+                                  <div key={idx} className={`p-4 rounded-lg border text-[13px] leading-relaxed whitespace-pre-wrap break-words shadow-sm ${theme === 'dark' ? 'bg-[#111] border-neutral-800/50 text-neutral-400' : 'bg-white border-neutral-200 text-neutral-600'}`}>
                                     {item.text}
                                   </div>
                                 ))}
@@ -1947,7 +2047,7 @@ date: ${note.date}
             }`}
         >
           <div className={`p-1.5 rounded-full ${activeView === 'record' ? (theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-100') : 'bg-transparent'}`}>
-            <LayoutDashboard className="w-5 h-5" />
+            <Mic className="w-5 h-5" />
           </div>
           <span className="text-[10px] font-medium">Record</span>
         </button>

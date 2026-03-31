@@ -3,13 +3,14 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Mic, ArrowRight, Globe, Share2, Layers, CheckCircle2, Check, X, Zap, Play, Square, Loader2, Lock } from "lucide-react";
+import { Mic, ArrowRight, Globe, Share2, Layers, CheckCircle2, Check, X, Zap, Play, Square, Loader2, Lock, Volume2, VolumeX } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useAudioRealtime } from "@/lib/useAudioRealtime";
 import { joinWaitlist } from "@/app/actions/waitlist";
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
+  const [demo1Muted, setDemo1Muted] = useState(true);
   const { scrollYProgress } = useScroll();
   const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
@@ -198,11 +199,15 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight">Perfect Audio, <br />Anywhere.</h3>
                 <p className="text-neutral-400 leading-relaxed text-lg font-light">
-                  Stop worrying about input devices. Our engine features best-in-class noise cancellation to deliver pristine transcripts, even from a cheap laptop mic.
+                  See our engine instantly process noisy audio. Compared to standard YouTube captions (right), <span className="text-blue-400 font-medium whitespace-nowrap">blue highlights</span> show exactly what they miss.
                 </p>
-                <div className="pt-4">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300">
-                    <CheckCircle2 className="w-4 h-4 text-blue-500" /> Ultra-low latency
+                <div className="pt-4 flex flex-wrap gap-3">
+                  <div
+                    onClick={() => setDemo1Muted(!demo1Muted)}
+                    className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 text-sm font-medium text-neutral-300 hover:bg-neutral-800 transition-colors"
+                  >
+                    {demo1Muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    {demo1Muted ? "Unmute Video" : "Mute Video"}
                   </div>
                 </div>
               </motion.div>
@@ -213,14 +218,23 @@ export default function LandingPage() {
                 transition={{ duration: 1, ease: "easeOut" }}
                 className="flex-[1.5] w-full perspective-[1000px]"
               >
-                <div className="aspect-video bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-2xl relative overflow-hidden group flex items-center justify-center transform-gpu preserve-3d">
-                  {/* Video Placeholder Content */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 group-hover:bg-white text-white group-hover:text-black transition-all duration-500 cursor-pointer shadow-[0_0_40px_rgba(255,255,255,0.1)]">
-                    <Play className="w-8 h-8 ml-1 fill-current" />
-                  </div>
-                  <div className="absolute bottom-6 left-8">
-                    <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
+                <div className="aspect-video bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-[0_0_50px_rgba(59,130,246,0.1)] relative overflow-hidden group transform-gpu preserve-3d">
+                  <video
+                    src="/demo-1.mp4"
+                    autoPlay
+                    loop
+                    muted={demo1Muted}
+                    playsInline
+                    className="w-full h-full object-cover scale-[1.02] group-hover:scale-100 transition-transform duration-700 ease-out"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                  <div className="absolute bottom-6 left-8 pointer-events-none">
+                    <p className="text-white font-bold text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
+                      Meetly vs. Standard Captions
+                    </p>
+                    <p className="text-neutral-400 text-sm opacity-0 group-hover:opacity-100 transition-all duration-500 delay-100 translate-y-2 group-hover:translate-y-0 mt-1">
+                      Notice the blue highlighted differences
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -318,7 +332,7 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 text-white">How we stack up</h2>
             <p className="text-neutral-400 text-lg">See why teams are switching to Meetly for flawless execution.</p>
           </div>
-          
+
           <div className="overflow-x-auto border border-neutral-800 rounded-3xl bg-[#050505] shadow-[0_0_40px_rgba(0,0,0,0.5)]">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -510,7 +524,7 @@ export default function LandingPage() {
       <section className="py-24 md:py-32 px-6 relative border-t border-neutral-900 bg-black overflow-hidden flex items-center justify-center">
         {/* Glow effect */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
-        
+
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-8 text-white">
             Ready to upgrade your meetings?
