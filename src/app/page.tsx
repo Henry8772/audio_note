@@ -2,11 +2,275 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Mic, ArrowRight, Globe, Share2, Layers, CheckCircle2, Check, X, Zap, Play, Square, Loader2, Lock, Volume2, VolumeX } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useAudioRealtime } from "@/lib/useAudioRealtime";
-import { joinWaitlist } from "@/app/actions/waitlist";
+
+const LiveTranslationDemo = () => {
+  const [activeLang, setActiveLang] = useState(0);
+  
+  const langs = [
+    { id: 'es', name: 'Spanish', flag: '🇪🇸', text: 'Me encanta cómo Hearo traduce todo en tiempo real.' },
+    { id: 'fr', name: 'French', flag: '🇫🇷', text: "J'adore la façon dont Hearo traduit tout en temps réel." },
+    { id: 'ja', name: 'Japanese', flag: '🇯🇵', text: 'Hearoがすべてをリアルタイムで翻訳する方法が大好きです。' },
+    { id: 'de', name: 'German', flag: '🇩🇪', text: 'Ich liebe es, wie Hearo alles in Echtzeit übersetzt.' },
+    { id: 'zh', name: 'Chinese', flag: '🇨🇳', text: '我喜欢Hearo如何实时翻译所有内容。' }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveLang((prev) => (prev + 1) % langs.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [langs.length]);
+
+  return (
+    <div className="absolute inset-0 bg-[#0a0a0a] flex flex-col font-sans">
+       {/* Beautiful dark minimal background */}
+       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.05),transparent_50%_50%)] pointer-events-none" />
+       
+       {/* Minimal Header */}
+       <div className="flex justify-between items-center px-6 py-4 border-b border-white/[0.05] bg-white/[0.01] backdrop-blur-md z-10">
+          <div className="flex items-center gap-3">
+             <div className="relative flex h-2.5 w-2.5">
+               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+             </div>
+             <span className="text-[10px] md:text-xs font-semibold text-neutral-400 tracking-widest uppercase">Live Transcript</span>
+          </div>
+          
+          {/* Dynamic Language Selection indicator */}
+          <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800/80 rounded-full px-3 py-1.5 shadow-sm">
+             <Globe className="w-3 h-3 text-neutral-400" />
+             <AnimatePresence mode="wait">
+               <motion.span 
+                 key={langs[activeLang].name}
+                 initial={{ opacity: 0, y: 2 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 exit={{ opacity: 0, y: -2 }}
+                 transition={{ duration: 0.2 }}
+                 className="text-[10px] md:text-xs font-semibold text-neutral-300"
+               >
+                 {langs[activeLang].name}
+               </motion.span>
+             </AnimatePresence>
+          </div>
+       </div>
+
+       {/* Conversation Flow */}
+       <div className="flex-1 px-8 py-10 relative z-10 flex flex-col justify-center">
+          <div className="max-w-2xl space-y-12">
+             {/* Source */}
+             <motion.div 
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               className="space-y-4"
+             >
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+                    English (Original)
+                  </span>
+                </div>
+                <p className="text-xl md:text-2xl text-neutral-500 font-light leading-snug">
+                  "I love how Hearo translates everything in real-time."
+                </p>
+             </motion.div>
+
+             {/* Target */}
+             <div className="space-y-4 min-h-[140px]">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+                    Translated to
+                  </span>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={langs[activeLang].flag}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="text-xs filter grayscale opacity-50 block mt-0.5"
+                    >
+                      {langs[activeLang].flag}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+                
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeLang}
+                    initial={{ opacity: 0, filter: 'blur(8px)', y: 5 }}
+                    animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+                    exit={{ opacity: 0, filter: 'blur(8px)', y: -5 }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} 
+                  >
+                    <p className="text-3xl md:text-4xl lg:text-5xl text-white font-medium leading-[1.15] tracking-tight">
+                       {langs[activeLang].text}
+                    </p>
+                  </motion.div>
+                </AnimatePresence>
+             </div>
+          </div>
+       </div>
+    </div>
+  )
+}
+
+const GlobalSyncDemo = () => {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (step === 0) timeout = setTimeout(() => setStep(1), 2000);
+    if (step === 1) timeout = setTimeout(() => setStep(2), 1000);
+    if (step === 2) timeout = setTimeout(() => setStep(3), 1500);
+    if (step === 3) timeout = setTimeout(() => setStep(0), 4000);
+
+    return () => clearTimeout(timeout);
+  }, [step]);
+
+  return (
+    <div className="absolute inset-0 bg-[#0a0a0a] flex flex-col font-sans overflow-hidden">
+       {/* Ambient mesh */}
+       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.05),transparent_50%_50%)] pointer-events-none" />
+       
+       {/* Background Transcript (Host View) */}
+       <div 
+         className={`absolute inset-0 p-8 flex flex-col justify-center transition-all duration-1000 ${step < 2 ? 'opacity-30 filter blur-md scale-95' : 'opacity-100 filter blur-0 scale-100'}`}
+       >
+          <div className="max-w-2xl mx-auto w-full space-y-6">
+             <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Live Recording</span>
+             </div>
+             
+             <p className="text-2xl md:text-3xl lg:text-4xl text-neutral-500 font-medium leading-[1.2]">
+               "Alright team, here is the game plan for Q3. We are going to..."
+             </p>
+             
+             <AnimatePresence>
+               {step >= 2 && (
+                 <motion.p 
+                   initial={{ opacity: 0, filter: 'blur(10px)', y: 10 }}
+                   animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
+                   transition={{ duration: 0.6 }}
+                   className="text-2xl md:text-3xl lg:text-4xl text-white font-medium leading-[1.2]"
+                 >
+                   "focus heavily on scaling our global infrastructure."
+                 </motion.p>
+               )}
+             </AnimatePresence>
+          </div>
+       </div>
+
+       {/* Top Right Live Indicator */}
+       <AnimatePresence>
+         {step >= 2 && (
+           <motion.div 
+             initial={{ opacity: 0, scale: 0.9, y: -20 }}
+             animate={{ opacity: 1, scale: 1, y: 0 }}
+             exit={{ opacity: 0, y: -10 }}
+             transition={{ type: "spring", damping: 20, stiffness: 100 }}
+             className="absolute top-6 right-6 flex items-center gap-3 bg-neutral-900/80 backdrop-blur-md border border-neutral-800 px-3 py-1.5 rounded-full shadow-2xl z-30"
+           >
+              <div className="flex -space-x-2">
+                 <div className="w-5 h-5 rounded-full bg-blue-500 border border-neutral-900 flex items-center justify-center text-[8px] text-white font-bold z-30">SJ</div>
+                 <AnimatePresence>
+                   {step === 3 && (
+                     <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} className="w-5 h-5 rounded-full bg-purple-500 border border-neutral-900 flex items-center justify-center text-[8px] text-white font-bold z-20">MR</motion.div>
+                   )}
+                 </AnimatePresence>
+                 <AnimatePresence>
+                   {step === 3 && (
+                     <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="w-5 h-5 rounded-full bg-orange-500 border border-neutral-900 flex items-center justify-center text-[8px] text-white font-bold z-10">KT</motion.div>
+                   )}
+                 </AnimatePresence>
+              </div>
+              <span className="text-[10px] font-bold text-neutral-300 uppercase tracking-widest pr-2">
+                {step === 2 ? '1 Viewer' : '15 Viewers Live'}
+              </span>
+           </motion.div>
+         )}
+       </AnimatePresence>
+
+       {/* Toast Notifications */}
+       <div className="absolute top-20 right-6 flex flex-col gap-2 w-48 z-40">
+          <AnimatePresence>
+             {step >= 2 && (
+               <motion.div 
+                 key="t1"
+                 initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                 animate={{ opacity: 1, x: 0, scale: 1 }}
+                 exit={{ opacity: 0 }}
+                 transition={{ type: "spring" }}
+                 className="bg-neutral-900/90 backdrop-blur-md border border-neutral-800 rounded-lg p-2.5 flex items-center gap-3 shadow-xl"
+               >
+                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                 <span className="text-[10px] font-medium text-neutral-300">Sarah joined (London)</span>
+               </motion.div>
+             )}
+             {step === 3 && (
+               <motion.div 
+                 key="t2"
+                 initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                 animate={{ opacity: 1, x: 0, scale: 1 }}
+                 exit={{ opacity: 0 }}
+                 transition={{ type: "spring", delay: 0.1 }}
+                 className="bg-neutral-900/90 backdrop-blur-md border border-neutral-800 rounded-lg p-2.5 flex items-center gap-3 shadow-xl"
+               >
+                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                 <span className="text-[10px] font-medium text-neutral-300">Kenji joined (Tokyo)</span>
+               </motion.div>
+             )}
+             {step === 3 && (
+               <motion.div 
+                 key="t3"
+                 initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                 animate={{ opacity: 1, x: 0, scale: 1 }}
+                 exit={{ opacity: 0 }}
+                 transition={{ type: "spring", delay: 0.3 }}
+                 className="bg-neutral-900/90 backdrop-blur-md border border-neutral-800 rounded-lg p-2.5 flex items-center gap-3 shadow-xl"
+               >
+                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                 <span className="text-[10px] font-medium text-neutral-300">Elena joined (Berlin)</span>
+               </motion.div>
+             )}
+          </AnimatePresence>
+       </div>
+
+       {/* Share Modal Foreground */}
+       <AnimatePresence>
+          {(step === 0 || step === 1) && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              transition={{ ease: [0.22, 1, 0.36, 1], duration: 0.4 }}
+              className="absolute inset-0 m-auto w-full max-w-[280px] h-fit bg-[#0f0f0f]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col items-center text-center z-20"
+            >
+               <h4 className="text-lg md:text-xl text-white font-medium mb-3 tracking-tight">Share Live Session</h4>
+               <p className="text-[11px] md:text-xs text-neutral-400 mb-6 leading-relaxed">
+                 Anyone with the link can watch your transcript in real-time.
+               </p>
+               
+               <motion.button 
+                 animate={{ 
+                    backgroundColor: step === 1 ? '#10b981' : '#ffffff',
+                    color: step === 1 ? '#000000' : '#000000',
+                    scale: step === 1 ? [1, 0.95, 1] : 1
+                 }}
+                 transition={{ duration: 0.2 }}
+                 className="w-full py-2.5 rounded-lg text-xs font-bold shadow-sm inline-flex items-center justify-center gap-1.5"
+               >
+                  {step === 1 && <Check className="w-3.5 h-3.5" />}
+                  {step === 1 ? 'Copied to Clipboard' : 'Copy Link'}
+               </motion.button>
+            </motion.div>
+          )}
+       </AnimatePresence>
+    </div>
+  )
+}
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
@@ -22,35 +286,6 @@ export default function LandingPage() {
   const [demoTimeLeft, setDemoTimeLeft] = useState<number | null>(null);
   const [demoFinished, setDemoFinished] = useState<boolean>(false);
 
-  // Waitlist State
-  const [waitlistEmail, setWaitlistEmail] = useState("");
-  const [waitlistStatus, setWaitlistStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [waitlistError, setWaitlistError] = useState("");
-
-  const handleJoinWaitlist = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!waitlistEmail) return;
-
-    setWaitlistStatus('loading');
-    setWaitlistError("");
-
-    const formData = new FormData();
-    formData.append("email", waitlistEmail);
-
-    try {
-      const result = await joinWaitlist(formData);
-      if (result.success) {
-        setWaitlistStatus('success');
-        setWaitlistEmail("");
-      } else {
-        setWaitlistStatus('error');
-        setWaitlistError(result.error || "Something went wrong.");
-      }
-    } catch {
-      setWaitlistStatus('error');
-      setWaitlistError("Failed to join waitlist. Please try again.");
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -97,6 +332,24 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-neutral-800 selection:text-white overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Hearo",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "WebBrowser",
+            "offers": {
+              "@type": "Offer",
+              "price": "0.00",
+              "priceCurrency": "USD"
+            },
+            "description": "Real-time AI transcription and translation. Perfect global sync for meetings with zero lag."
+          })
+        }}
+      />
       {/* Navigation */}
       <nav
         className={`fixed top-0 w-full z-50 transition-all duration-300 border-b ${scrolled ? "bg-black/80 backdrop-blur-md border-neutral-800/80 py-3" : "bg-transparent border-transparent py-5"
@@ -107,19 +360,18 @@ export default function LandingPage() {
             <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.2)]">
               <Mic className="w-4 h-4 text-black" />
             </div>
-            <span className="font-semibold tracking-wide text-sm">Meetly</span>
+            <span className="font-semibold tracking-wide text-sm">Hearo</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#demo" className="hover:text-white transition-colors">Live Demo</a>
-            <a href="#waitlist" className="hover:text-white transition-colors">Waitlist</a>
           </div>
           <div className="flex flex-center gap-4">
             <Link
               href="/app"
               className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-neutral-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center gap-2"
             >
-              Start for Free <ArrowRight className="w-4 h-4" />
+              Start <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -147,7 +399,7 @@ export default function LandingPage() {
           </a>
           <br />
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-8 leading-[1.1]">
-            World-class <br />
+            Real-time AI <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-300 to-neutral-600">
               transcription.
             </span>
@@ -160,7 +412,7 @@ export default function LandingPage() {
               href="/app"
               className="bg-white text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-neutral-200 transition-colors w-full sm:w-auto shadow-[0_0_30px_rgba(255,255,255,0.2)]"
             >
-              Start for Free
+              Start
             </Link>
             <a
               href="#demo"
@@ -230,7 +482,7 @@ export default function LandingPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                   <div className="absolute bottom-6 left-8 pointer-events-none">
                     <p className="text-white font-bold text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-4 group-hover:translate-y-0">
-                      Meetly vs. Standard Captions
+                      Hearo vs. Standard Captions
                     </p>
                     <p className="text-neutral-400 text-sm opacity-0 group-hover:opacity-100 transition-all duration-500 delay-100 translate-y-2 group-hover:translate-y-0 mt-1">
                       Notice the blue highlighted differences
@@ -269,14 +521,8 @@ export default function LandingPage() {
                 transition={{ duration: 1, ease: "easeOut" }}
                 className="flex-[1.5] w-full perspective-[1000px]"
               >
-                <div className="aspect-video bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-2xl relative overflow-hidden group flex items-center justify-center transform-gpu preserve-3d">
-                  <div className="absolute inset-0 bg-gradient-to-bl from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 group-hover:bg-white text-white group-hover:text-black transition-all duration-500 cursor-pointer shadow-[0_0_40px_rgba(255,255,255,0.1)]">
-                    <Play className="w-8 h-8 ml-1 fill-current" />
-                  </div>
-                  <div className="absolute bottom-6 right-8 text-right">
-                    <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
-                  </div>
+                <div className="aspect-video bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-2xl relative overflow-hidden group transform-gpu preserve-3d">
+                  <LiveTranslationDemo />
                 </div>
               </motion.div>
             </div>
@@ -310,14 +556,8 @@ export default function LandingPage() {
                 transition={{ duration: 1, ease: "easeOut" }}
                 className="flex-[1.5] w-full perspective-[1000px]"
               >
-                <div className="aspect-video bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-2xl relative overflow-hidden group flex items-center justify-center transform-gpu preserve-3d">
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <div className="w-20 h-20 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 group-hover:scale-110 group-hover:bg-white text-white group-hover:text-black transition-all duration-500 cursor-pointer shadow-[0_0_40px_rgba(255,255,255,0.1)]">
-                    <Play className="w-8 h-8 ml-1 fill-current" />
-                  </div>
-                  <div className="absolute bottom-6 left-8">
-                    <p className="text-white font-medium text-lg tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">Watch Demo</p>
-                  </div>
+                <div className="aspect-video bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-2xl relative overflow-hidden group transform-gpu preserve-3d">
+                  <GlobalSyncDemo />
                 </div>
               </motion.div>
             </div>
@@ -330,7 +570,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 text-white">How we stack up</h2>
-            <p className="text-neutral-400 text-lg">See why teams are switching to Meetly for flawless execution.</p>
+            <p className="text-neutral-400 text-lg">See why teams are switching to Hearo for flawless execution.</p>
           </div>
 
           <div className="overflow-x-auto border border-neutral-800 rounded-3xl bg-[#050505] shadow-[0_0_40px_rgba(0,0,0,0.5)]">
@@ -340,7 +580,7 @@ export default function LandingPage() {
                   <th className="p-6 font-medium text-neutral-400 w-1/4">Feature</th>
                   <th className="p-6 font-semibold text-white text-lg w-1/4 border-l border-neutral-800 bg-white/5 relative">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500" />
-                    Meetly
+                    Hearo
                   </th>
                   <th className="p-6 font-medium text-neutral-500 w-1/4 border-l border-neutral-800">OpenAI Whisper</th>
                   <th className="p-6 font-medium text-neutral-500 w-1/4 border-l border-neutral-800">Deepgram</th>
@@ -530,14 +770,14 @@ export default function LandingPage() {
             Ready to upgrade your meetings?
           </h2>
           <p className="text-neutral-400 text-lg md:text-xl mb-12 max-w-2xl mx-auto font-light leading-relaxed">
-            Join professionals who have revolutionized their workflow with Meetly. Experience flawless real-time transcription and translation today.
+            Join professionals who have revolutionized their workflow with Hearo. Experience flawless real-time transcription and translation today.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/app"
               className="bg-white text-black px-8 py-4 rounded-full text-base font-semibold hover:bg-neutral-200 hover:scale-105 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2"
             >
-              Start for Free <ArrowRight className="w-5 h-5" />
+              Start <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
         </div>
@@ -548,7 +788,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <Mic className="w-5 h-5 text-neutral-500" />
-            <span className="font-semibold text-neutral-500 tracking-wide text-sm">Meetly by HenryAI</span>
+            <span className="font-semibold text-neutral-500 tracking-wide text-sm">Hearo by HenryAI</span>
           </div>
           <p className="text-sm text-neutral-600">
             &copy; {new Date().getFullYear()} meeting.henryai.studio. All rights reserved.

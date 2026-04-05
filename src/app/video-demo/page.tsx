@@ -41,7 +41,7 @@ export default function VideoDemoPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'meetly-baseline.srt';
+    a.download = 'hearo-baseline.srt';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -195,7 +195,7 @@ export default function VideoDemoPage() {
     return subtitles;
   }
 
-  // Helper to sanitize Meetly transcription text
+  // Helper to sanitize Hearo transcription text
   const cleanText = (text: string) => {
     return text.replace(/\*\*Speaker \d+:\*\*/g, '')
       .replace(/\\n/g, ' ')
@@ -205,23 +205,23 @@ export default function VideoDemoPage() {
   };
 
   // Helper to dynamically diff active text against original subtitles
-  const getSubtleDiff = (meetlyText: string) => {
+  const getSubtleDiff = (hearoText: string) => {
     if (parsedSubtitles.length === 0 || !showOriginals) {
-      return meetlyText.split(/\s+/).filter(Boolean).map((word, id) => ({ id, word, added: false }));
+      return hearoText.split(/\s+/).filter(Boolean).map((word, id) => ({ id, word, added: false }));
     }
 
     // Get the complete block of text that the Original SRT has currently provided up to this point
     const originalText = parsedSubtitles.filter(s => s.start <= currentTime).map(s => s.text).join(' ');
 
-    const meetlyWords = meetlyText.split(/\s+/).filter(Boolean);
+    const hearoWords = hearoText.split(/\s+/).filter(Boolean);
     const originalWords = originalText.split(/\s+/).filter(Boolean);
 
     // Limit LCS algorithm to the most recent 100 words to keep 60fps performance during heavy strings
     const MAX_WORDS = 100;
-    const mLen = meetlyWords.length;
+    const mLen = hearoWords.length;
     const oLen = originalWords.length;
 
-    const mRecent = meetlyWords.slice(Math.max(0, mLen - MAX_WORDS));
+    const mRecent = hearoWords.slice(Math.max(0, mLen - MAX_WORDS));
     const oRecent = originalWords.slice(Math.max(0, oLen - MAX_WORDS));
 
     const dp = Array(mRecent.length + 1).fill(null).map(() => Array(oRecent.length + 1).fill(0));
@@ -250,7 +250,7 @@ export default function VideoDemoPage() {
         resultRecent.unshift({ word: mRecent[i - 1], added: false });
         i--; j--;
       } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-        // Meetly has a word that isn't mapped in the Original timeline => "Extra Information Caught"
+        // Hearo has a word that isn't mapped in the Original timeline => "Extra Information Caught"
         resultRecent.unshift({ word: mRecent[i - 1], added: true });
         i--;
       } else {
@@ -262,7 +262,7 @@ export default function VideoDemoPage() {
       i--;
     }
 
-    const oldWords = meetlyWords.slice(0, Math.max(0, mLen - MAX_WORDS)).map((word) => ({ word, added: false }));
+    const oldWords = hearoWords.slice(0, Math.max(0, mLen - MAX_WORDS)).map((word) => ({ word, added: false }));
     return [...oldWords, ...resultRecent].map((res, id) => ({ ...res, id }));
   };
 
@@ -278,7 +278,7 @@ export default function VideoDemoPage() {
             <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.2)]">
               <Mic className="w-4 h-4 text-black" />
             </div>
-            <span className="font-semibold tracking-wide text-sm hidden sm:block">Meetly Studio Demo</span>
+            <span className="font-semibold tracking-wide text-sm hidden sm:block">Hearo Studio Demo</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -305,7 +305,7 @@ export default function VideoDemoPage() {
                 <span className="text-sm font-medium text-neutral-300">Studio Setup</span>
               </div>
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Select Video Source</h1>
-              <p className="text-neutral-400 max-w-xl mx-auto">Upload a local video or paste a YouTube link to demonstrate Meetly&apos;s real-time accuracy against any content.</p>
+              <p className="text-neutral-400 max-w-xl mx-auto">Upload a local video or paste a YouTube link to demonstrate Hearo&apos;s real-time accuracy against any content.</p>
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">

@@ -547,7 +547,7 @@ date: ${note.date}
       setShowShareModal(false);
       const hostId = crypto.randomUUID();
       const sessionId = await createSession({
-        title: "Meetly | HenryAI",
+        title: "Hearo | HenryAI",
         hostId: hostId,
         password: requirePassword ? generatedPassword : undefined
       });
@@ -778,7 +778,7 @@ date: ${note.date}
             <Mic className={`w-4 h-4 ${theme === 'dark' ? 'text-black' : 'text-white'}`} />
           </div>
           <span className={`text-[15px] font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>
-            Meetly
+            Hearo
           </span>
         </Link>
         <div className="flex items-center gap-3">
@@ -1277,7 +1277,7 @@ date: ${note.date}
             <Mic className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-black' : 'text-white'}`} />
           </div>
           <h1 className={`text-[13px] font-semibold tracking-wide hidden md:block whitespace-nowrap overflow-hidden ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>
-            Meetly | HenryAI
+            Hearo | HenryAI
           </h1>
         </Link>
 
