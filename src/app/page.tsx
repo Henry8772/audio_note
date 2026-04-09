@@ -378,7 +378,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-40 pb-20 md:pt-52 md:pb-32 px-6 flex flex-col items-center justify-center text-center">
+      <section className="relative pt-28 pb-12 md:pt-52 md:pb-32 px-6 flex flex-col items-center justify-center text-center">
         {/* Glow effect */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
 
@@ -398,13 +398,13 @@ export default function LandingPage() {
             <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
           </a>
           <br />
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-8 leading-[1.1]">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-5 md:mb-8 leading-[1.1]">
             Real-time AI <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-neutral-300 to-neutral-600">
               transcription.
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
+          <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mx-auto mb-8 md:mb-12 leading-relaxed font-light">
             We turn your $5 microphone into an $800 studio setup. Experience best-in-class noise cancellation, real-time translation, and zero lag.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

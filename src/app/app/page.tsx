@@ -770,7 +770,7 @@ date: ${note.date}
   };
 
   return (
-    <div className={`h-[100dvh] w-full flex flex-col md:flex-row font-sans overflow-hidden ${theme === 'dark' ? 'bg-black text-neutral-200 selection:bg-neutral-800 selection:text-white' : 'bg-[#f4f4f5] text-neutral-800 selection:bg-neutral-200 selection:text-neutral-900'}`}>
+    <div className={`h-[100dvh] w-full flex flex-col md:flex-row font-sans overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] ${theme === 'dark' ? 'bg-black text-neutral-200 selection:bg-neutral-800 selection:text-white' : 'bg-[#f4f4f5] text-neutral-800 selection:bg-neutral-200 selection:text-neutral-900'}`}>
       {/* Mobile Top Header */}
       <div className={`md:hidden shrink-0 h-[60px] w-full flex items-center justify-between px-4 z-30 border-b ${theme === 'dark' ? 'bg-black border-neutral-800/80' : 'bg-white border-neutral-200'}`}>
         <Link href="/" className="flex items-center gap-2 cursor-pointer">
@@ -781,18 +781,41 @@ date: ${note.date}
             Hearo
           </span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {tier === 'free' && (
+            <div 
+              onClick={() => setShowUpgradeModal(true)}
+              className={`cursor-pointer flex items-center gap-1 text-[10px] font-bold px-1.5 py-1 rounded-md border uppercase tracking-widest ${900 - freeUsageTime < 180 ? 'text-red-500 bg-red-500/10 border-red-500/30 animate-pulse' : (theme === 'dark' ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' : 'text-amber-600 bg-amber-50 border-amber-200')}`}
+            >
+              <Clock className="w-3 h-3 shrink-0" />
+              <span>{Math.max(0, Math.floor((900 - freeUsageTime) / 60))}:{String(Math.max(0, 900 - freeUsageTime) % 60).padStart(2, '0')}</span>
+            </div>
+          )}
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className={`p-1.5 rounded-lg transition-all border border-transparent ${theme === 'dark' ? 'text-neutral-500 hover:bg-neutral-900 hover:text-white' : 'text-neutral-500 hover:bg-neutral-100 hover:text-black'}`}
+            title="Toggle Theme"
+          >
+            {theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => setActiveView(activeView === 'record' ? 'notes' : 'record')}
+            className={`p-1.5 rounded-lg transition-all border ${activeView === 'notes' ? (theme === 'dark' ? 'bg-neutral-800 text-white border-neutral-700' : 'bg-neutral-100 text-neutral-900 border-neutral-300') : (theme === 'dark' ? 'text-neutral-500 border-transparent hover:bg-neutral-900 hover:text-white' : 'text-neutral-500 border-transparent hover:bg-neutral-100 hover:text-black')}`}
+            title="Past Notes"
+          >
+            {activeView === 'record' ? <Clock className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
           {isAuthenticated && userEmail ? (
              <button
                onClick={() => setShowSettingsModal(true)}
-               className={`p-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800' : 'bg-white text-neutral-500 hover:text-neutral-900 border border-neutral-200 shadow-sm'}`}
+               className={`p-1.5 rounded-lg transition-all ${theme === 'dark' ? 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800' : 'bg-white text-neutral-500 hover:text-neutral-900 border border-neutral-200 shadow-sm'}`}
              >
                <Settings className="w-4 h-4" />
              </button>
           ) : (
             <button
                onClick={() => setShowAuthModal(true)}
-               className={`text-xs font-semibold px-4 py-2 rounded-lg transition-all ${theme === 'dark' ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}
+               className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${theme === 'dark' ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}
             >
               Sign In
             </button>
@@ -1041,6 +1064,13 @@ date: ${note.date}
                     <span className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">{tier}</span>
                   </div>
                 </div>
+
+                <button
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="w-full bg-[#111] border border-white/5 hover:border-white/10 text-neutral-300 font-medium text-[14px] py-3.5 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,0,0,0.2)]"
+                >
+                  {theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />} Toggle Theme
+                </button>
 
                 <button
                   onClick={handleManageBilling}
@@ -1370,28 +1400,16 @@ date: ${note.date}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col h-full w-full absolute inset-0"
             >
-              {/* Mobile Tab Switcher */}
-              <div className={`md:hidden shrink-0 px-4 py-2 border-b flex justify-center z-10 ${theme === 'dark' ? 'bg-[#0a0a0a] border-neutral-800/80' : 'bg-white border-neutral-200'}`}>
-                <div className={`flex p-1 rounded-xl border w-full max-w-[300px] ${theme === 'dark' ? 'bg-[#111] border-neutral-800' : 'bg-neutral-100/50 border-neutral-200/50'}`}>
-                  <button
-                    onClick={() => setMobileTab('transcript')}
-                    className={`flex items-center justify-center gap-2 flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${mobileTab === 'transcript' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : (theme === 'dark' ? 'text-neutral-500' : 'text-neutral-500')}`}
-                  >
-                    <List className="w-3.5 h-3.5" /> Transcript
-                  </button>
-                  <button
-                    onClick={() => setMobileTab('translation')}
-                    className={`flex items-center justify-center gap-2 flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${mobileTab === 'translation' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : (theme === 'dark' ? 'text-neutral-500' : 'text-neutral-500')}`}
-                  >
-                    <FileText className="w-3.5 h-3.5" /> Notes
-                  </button>
-                </div>
-              </div>
 
-              {/* Workspace */}
-              <div className="flex-1 flex flex-col md:grid md:grid-cols-2 min-h-0 relative">
-                {/* Floating Dock */}
-                <div className={`absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-2xl backdrop-blur-xl border w-[96%] sm:w-auto overflow-x-auto no-scrollbar ${theme === 'dark' ? 'bg-black/80 md:bg-black/60 border-neutral-800/80 shadow-[0_0_40px_rgba(0,0,0,0.8)]' : 'bg-white/90 md:bg-white/70 border-neutral-200 shadow-[0_4px_30px_rgba(0,0,0,0.1)]'}`}>
+
+              {/* Workspace Container */}
+              <div className="flex-1 flex flex-col min-h-0 relative">
+                
+                {/* Bottom Control Bar */}
+                <div className={`order-last shrink-0 w-full z-50 flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-t ${theme === 'dark' ? 'bg-[#0a0a0a] border-neutral-800' : 'bg-white border-neutral-200'} shadow-[0_-2px_10px_rgba(0,0,0,0.02)]`}>
+                  
+                  {/* Left Scrollable Tools Area */}
+                  <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar flex-1 min-w-0 pr-3 sm:pr-6">
 
                   {isListening && (
                     <div className="hidden sm:flex items-center gap-2 text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-2 py-1.5 rounded-md border border-emerald-400/20 uppercase tracking-widest mr-[-4px]">
@@ -1403,10 +1421,12 @@ date: ${note.date}
                     </div>
                   )}
 
+
+
                   {tier === 'free' && (
                     <div 
                       onClick={() => setShowUpgradeModal(true)}
-                      className={`cursor-pointer flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-md border uppercase tracking-widest transition-colors shadow-sm ml-1 ${
+                      className={`hidden sm:flex cursor-pointer items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-md border uppercase tracking-widest transition-colors shadow-sm ml-1 ${
                         900 - freeUsageTime < 180 
                           ? 'text-red-500 bg-red-500/10 border-red-500/30 animate-pulse' 
                           : theme === 'dark' 
@@ -1435,7 +1455,7 @@ date: ${note.date}
                     <button
                       onClick={() => setIsSystemAudioEnabled(!isSystemAudioEnabled)}
                       disabled={isListening}
-                      className={`flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isSystemAudioEnabled
+                      className={`hidden md:flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isSystemAudioEnabled
                         ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200 shadow-[0_2px_10px_rgba(0,0,0,0.05)]')
                         : (theme === 'dark' ? 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900' : 'text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200/50')
                         } ${isListening ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -1446,7 +1466,7 @@ date: ${note.date}
                   </div>
 
                   {isMicEnabled && (
-                    <div ref={micDropdownRef} className="relative group shrink-0">
+                    <div ref={micDropdownRef} className="hidden sm:block relative group shrink-0">
                       <button
                         type="button"
                         disabled={isListening}
@@ -1504,7 +1524,7 @@ date: ${note.date}
                   <button
                     onClick={handleShareLive}
                     disabled={!isListening || isSharingLive}
-                    className={`text-[10px] sm:text-[11px] px-3 sm:px-4 py-2 rounded-xl uppercase font-bold tracking-wider flex items-center gap-1.5 transition-all outline-none border ${liveSessionId
+                    className={`hidden sm:flex text-[10px] sm:text-[11px] px-3 sm:px-4 py-2 rounded-xl uppercase font-bold tracking-wider items-center gap-1.5 transition-all outline-none border ${liveSessionId
                       ? "bg-red-500/10 text-red-500 border-red-500/30 shadow-sm"
                       : isListening
                         ? (theme === 'dark' ? "bg-neutral-900 text-blue-400 border-neutral-700 hover:text-white hover:bg-neutral-800" : "bg-blue-50 text-blue-600 border-blue-200 hover:text-blue-700 hover:bg-blue-100 shadow-sm")
@@ -1523,12 +1543,14 @@ date: ${note.date}
                       </>
                     )}
                   </button>
+                  </div> {/* Close Left Scrollable Tools Area */}
 
-                  <div className={`w-[1px] h-6 mx-1 ${theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-300'}`}></div>
+                  <div className="flex items-center shrink-0">
+                    <div className={`hidden sm:block w-[1px] h-6 mx-2 sm:mx-3 ${theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-300'}`}></div>
 
-                  {/* Language Selector Dropdown (Dark Theme) */}
-                  <div ref={languageDropdownRef} className="relative group shrink-0">
-                    <button
+                    {/* Language Selector Dropdown (Dark Theme) */}
+                    <div ref={languageDropdownRef} className="relative group shrink-0">
+                      <button
                       type="button"
                       disabled={isListening}
                       onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
@@ -1551,7 +1573,7 @@ date: ${note.date}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
                             transition={{ duration: 0.15, ease: "easeOut" }}
-                            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-[220px] bg-[#111] border border-neutral-800 rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] overflow-hidden z-[60]"
+                            className="absolute bottom-full mb-3 right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 origin-bottom-right sm:origin-bottom w-[220px] bg-[#111] border border-neutral-800 rounded-2xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] overflow-hidden z-[60]"
                           >
                             <div className="p-3 border-b border-neutral-800 bg-neutral-900/50 flex items-center justify-between">
                               <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Select Languages</span>
@@ -1596,7 +1618,10 @@ date: ${note.date}
                       )}
                     </AnimatePresence>
                   </div>
+                  </div> {/* Close Middle/Right wrappers */}
 
+                  {/* Right Fixed Action Area */}
+                  <div className={`shrink-0 pl-3 sm:pl-6 ml-2 sm:ml-0 border-l flex items-center justify-center ${theme === 'dark' ? 'border-neutral-800' : 'border-neutral-300'}`}>
                   {(() => {
                     if (isConnecting) {
                       return (
@@ -1655,29 +1680,47 @@ date: ${note.date}
                       </button>
                     );
                   })()}
+                  </div>
                 </div>
+
+                {/* Main Content Areas */}
+                <div className="flex-1 flex flex-col md:grid md:grid-cols-2 min-h-0 relative">
 
                 {/* Left Pane: Raw Transcript */}
                 <div className={`${mobileTab === 'transcript' ? 'flex' : 'hidden'} md:flex flex-col h-full min-h-0 overflow-hidden relative ${theme === 'dark' ? 'bg-[#0a0a0a] border-r border-neutral-800' : 'bg-white border-r border-neutral-200'}`}>
-                  <div className={`min-h-[48px] border-b flex items-center justify-between px-6 shrink-0 ${theme === 'dark' ? 'border-neutral-800/80 bg-black' : 'border-neutral-200/80 bg-[#f4f4f5]'}`}>
-                    <h2 className={`text-[10px] font-semibold tracking-widest uppercase flex items-center gap-2 ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-600'}`}>
+                  <div className={`min-h-[48px] border-b flex items-center justify-between px-3 sm:px-6 shrink-0 ${theme === 'dark' ? 'border-neutral-800/80 bg-black' : 'border-neutral-200/80 bg-[#f4f4f5]'}`}>
+                    <div className={`md:hidden flex p-0.5 rounded-lg border shrink-0 ${theme === 'dark' ? 'bg-[#111] border-neutral-800' : 'bg-neutral-100/50 border-neutral-200/50'}`}>
+                      <button onClick={() => setMobileTab('transcript')} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${mobileTab === 'transcript' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : 'text-neutral-500'}`}>Transcript</button>
+                      <button onClick={() => setMobileTab('translation')} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${mobileTab === 'translation' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : 'text-neutral-500'}`}>AI Notes</button>
+                    </div>
+                    <h2 className={`hidden md:flex text-[10px] font-semibold tracking-widest uppercase items-center gap-2 ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-600'}`}>
                       <List className="w-3.5 h-3.5" /> Live Transcript
                     </h2>
-                    {transcriptItems.length > 0 && (
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <button
+                        onClick={handleManualSave}
+                        disabled={transcriptItems.length === 0}
+                        className={`flex items-center gap-1.5 text-[10px] uppercase font-bold px-2 py-1.5 rounded-md transition-all border ${transcriptItems.length === 0 ? 'opacity-40 cursor-not-allowed' : ''} ${theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-neutral-300 hover:text-white hover:bg-neutral-800' : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm'}`}
+                        title="Save Transcript"
+                      >
+                        {isSaved ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Save className="w-3.5 h-3.5" />}
+                        <span className="hidden sm:inline">{isSaved ? "Saved" : "Save"}</span>
+                      </button>
                       <button
                         onClick={() => {
                           const text = transcriptItems.map(item => item.text).join('\n\n');
                           navigator.clipboard.writeText(text);
                           toast.success("Transcript copied to clipboard!");
                         }}
-                        className={`flex items-center gap-1.5 text-[10px] uppercase font-bold px-2 py-1 rounded-md transition-all ${theme === 'dark' ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-500 hover:text-black hover:bg-neutral-200'}`}
+                        disabled={transcriptItems.length === 0}
+                        className={`p-1.5 rounded-md transition-all border ${transcriptItems.length === 0 ? 'opacity-40 cursor-not-allowed' : ''} ${theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-neutral-300 hover:text-white hover:bg-neutral-800' : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm'}`}
                         title="Copy Transcript"
                       >
-                        <Copy className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Copy</span>
+                        <Copy className="w-3.5 h-3.5" />
                       </button>
-                    )}
+                    </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-6 min-h-0" ref={transcriptContainerRef}>
+                  <div className="flex-1 overflow-y-auto p-6 pb-6 space-y-6 min-h-0" ref={transcriptContainerRef}>
                     {transcriptItems.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center text-neutral-600">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 border ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800/50' : 'bg-neutral-100 border-neutral-200/50'}`}>
@@ -1719,40 +1762,20 @@ date: ${note.date}
 
                 {/* Right Pane: Customizable Workspace Tabs */}
                 <div className={`${mobileTab === 'translation' ? 'flex' : 'hidden'} md:flex flex-col h-full relative min-h-0 overflow-hidden ${theme === 'dark' ? 'bg-black border-l border-neutral-800/80' : 'bg-[#f4f4f5] border-l border-neutral-200'}`}>
-                  <div className={`min-h-[48px] border-b flex items-center justify-between px-2 sm:px-4 ${theme === 'dark' ? 'border-neutral-800/80 bg-[#0a0a0a]' : 'border-neutral-200 bg-white'}`}>
+                  {/* TWO-ROW HEADER ON MOBILE, SINGLE ROW ON DESKTOP */}
+                  <div className={`flex flex-col md:flex-row md:items-center px-2 sm:px-4 border-b ${theme === 'dark' ? 'border-neutral-800/80 bg-[#0a0a0a]' : 'border-neutral-200 bg-white'}`}>
 
-                    {/* Tabs / Headers */}
-                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-2">
-                      {workspaceViews.map((view) => (
-                        <button
-                          key={view.id}
-                          onClick={() => setActiveWorkspaceId(view.id)}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors whitespace-nowrap border ${activeWorkspaceId === view.id ? (theme === 'dark' ? 'bg-neutral-800 border-neutral-700 text-white shadow-sm' : 'bg-white shadow-sm border-neutral-200 text-neutral-900') : (theme === 'dark' ? 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900' : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200/50')}`}
-                        >
-                          {view.type === 'ai_notes' ? <FileText className="w-3.5 h-3.5" /> : <RadioTower className="w-3.5 h-3.5" />}
-                          {view.type === 'ai_notes' ? 'AI NOTES' : 'TRANSLATION'}
-                          <span className="opacity-50 text-[9px] uppercase">[{AVAILABLE_LANGUAGES.find(l => l.code === view.language)?.label || view.language}]</span>
+                    {/* Mobile: Top Row with Tabs & Actions | Desktop: Right Action Row */}
+                    <div className="flex items-center justify-between w-full md:w-auto md:w-fit py-2 md:py-0 md:min-h-[48px] border-b md:border-0 border-neutral-200 dark:border-neutral-800/50 md:order-last md:ml-4">
+                      
+                      {/* Mobile Main Tab Switcher */}
+                      <div className={`md:hidden flex mr-2 p-0.5 rounded-lg border shrink-0 ${theme === 'dark' ? 'bg-[#111] border-neutral-800' : 'bg-neutral-100/50 border-neutral-200/50'}`}>
+                        <button onClick={() => setMobileTab('transcript')} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${mobileTab === 'transcript' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : 'text-neutral-500'}`}>Transcript</button>
+                        <button onClick={() => setMobileTab('translation')} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${mobileTab === 'translation' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : 'text-neutral-500'}`}>AI Notes</button>
+                      </div>
 
-                          <div onClick={(e) => {
-                            e.stopPropagation();
-                            removeWorkspaceView(view.id);
-                          }} className={`p-0.5 rounded-sm transition-colors ${theme === 'dark' ? 'hover:bg-neutral-700/50 text-neutral-400 hover:text-white' : 'hover:bg-neutral-200 text-neutral-400 hover:text-neutral-900'}`}>
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                          </div>
-                        </button>
-                      ))}
-
-                      <button
-                        onClick={() => setShowAddViewModal(true)}
-                        className={`flex items-center justify-center w-7 h-7 rounded-sm border transition-all ml-1 shrink-0 ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 hover:border-neutral-700' : 'bg-white border-neutral-200 shadow-sm text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'}`}
-                        title="Add Workspace View"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
-                      </button>
-                    </div>
-
-                    {/* Action buttons (Save, Take Note) */}
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-4">
+                      {/* Action buttons (Save, Take Note) */}
+                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                       <button
                         onClick={() => {
                           const view = workspaceViews.find(v => v.id === activeWorkspaceId);
@@ -1806,7 +1829,39 @@ date: ${note.date}
                         <span className="hidden sm:inline">{isSummarizing ? "VALIDATING" : "TAKE NOTE"}</span>
                       </button>
                     </div>
-                  </div>
+                    </div> {/* Close Top Row / Action Row */}
+
+                    {/* The Workspace Tabs (Mobile: Bottom Row, Desktop: Left/flex-1) */}
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-2 md:py-0 md:min-h-[48px] flex-1 min-w-0 md:order-first md:pr-2">
+                      {workspaceViews.map((view) => (
+                        <button
+                          key={view.id}
+                          onClick={() => setActiveWorkspaceId(view.id)}
+                          className={`flex items-center shrink-0 gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors whitespace-nowrap border ${activeWorkspaceId === view.id ? (theme === 'dark' ? 'bg-neutral-800 border-neutral-700 text-white shadow-sm' : 'bg-white shadow-sm border-neutral-200 text-neutral-900') : (theme === 'dark' ? 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900' : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200/50')}`}
+                        >
+                          {view.type === 'ai_notes' ? <FileText className="w-3 h-3" /> : <RadioTower className="w-3 h-3" />}
+                          {view.type === 'ai_notes' ? 'AI NOTES' : 'TRANSLATION'}
+                          <span className="opacity-50 text-[9px] uppercase">[{AVAILABLE_LANGUAGES.find(l => l.code === view.language)?.label || view.language}]</span>
+
+                          <div onClick={(e) => {
+                            e.stopPropagation();
+                            removeWorkspaceView(view.id);
+                          }} className={`p-0.5 rounded-sm transition-colors ${theme === 'dark' ? 'hover:bg-neutral-700/50 text-neutral-400 hover:text-white' : 'hover:bg-neutral-200 text-neutral-400 hover:text-neutral-900'}`}>
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          </div>
+                        </button>
+                      ))}
+
+                      <button
+                        onClick={() => setShowAddViewModal(true)}
+                        className={`flex items-center justify-center w-7 h-7 rounded-sm border transition-all ml-1 shrink-0 ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 hover:border-neutral-700' : 'bg-white border-neutral-200 shadow-sm text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'}`}
+                        title="Add Workspace View"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                      </button>
+                    </div>
+
+                  </div> {/* Close Parent Two-Row Flex Header */}
 
                   {/* Rendering Active View Payload */}
                   <div className="flex-1 min-h-0 overflow-hidden relative">
@@ -1816,7 +1871,7 @@ date: ${note.date}
                       if (view.type === 'ai_notes') {
                         const summaryText = summaries[view.language || 'en'];
                         return (
-                          <div key={view.id} className="h-full flex flex-col p-6 pb-24 overflow-y-auto">
+                          <div key={view.id} className="h-full flex flex-col p-6 pb-6 overflow-y-auto">
                             {!summaryText ? (
                               <div className="h-full flex flex-col items-center justify-center text-neutral-600 opacity-50">
                                 <FileText className="w-8 h-8 mb-2" />
@@ -1833,7 +1888,7 @@ date: ${note.date}
 
                       if (view.type === 'live_translation') {
                         return (
-                          <div key={view.id} className="h-full flex flex-col pt-6 px-6 sm:px-8 pb-32 overflow-y-auto space-y-6" ref={translatedTranscriptContainerRef}>
+                          <div key={view.id} className="h-full flex flex-col pt-6 px-6 sm:px-8 pb-6 overflow-y-auto space-y-6" ref={translatedTranscriptContainerRef}>
                             {translatedTranscriptItems.length === 0 ? (
                               <div className="flex flex-col items-center justify-center h-full text-neutral-500 opacity-60">
                                 <RadioTower className="w-8 h-8 mb-3 opacity-50" />
@@ -1857,7 +1912,8 @@ date: ${note.date}
                   </div>
 
                 </div>
-              </div>
+                </div> {/* End of Main Content Areas Grid */}
+              </div> {/* End of Workspace Container */}
             </motion.div>
           )}
 
@@ -2036,48 +2092,6 @@ date: ${note.date}
 
         </AnimatePresence>
       </main>
-
-      {/* Mobile Bottom Navigation */}
-      <nav className={`md:hidden shrink-0 w-full flex items-center justify-around px-2 pt-2 pb-5 z-40 border-t ${theme === 'dark' ? 'bg-black border-neutral-800/80' : 'bg-white border-neutral-200'}`}>
-        <button
-          onClick={() => setActiveView('record')}
-          className={`flex flex-col items-center gap-1 min-w-[64px] transition-all ${activeView === 'record'
-            ? (theme === 'dark' ? 'text-white' : 'text-neutral-900')
-            : (theme === 'dark' ? 'text-neutral-500 hover:text-neutral-400' : 'text-neutral-500 hover:text-neutral-700')
-            }`}
-        >
-          <div className={`p-1.5 rounded-full ${activeView === 'record' ? (theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-100') : 'bg-transparent'}`}>
-            <Mic className="w-5 h-5" />
-          </div>
-          <span className="text-[10px] font-medium">Record</span>
-        </button>
-        <button
-          onClick={() => setActiveView('notes')}
-          className={`relative flex flex-col items-center gap-1 min-w-[64px] transition-all ${activeView === 'notes'
-            ? (theme === 'dark' ? 'text-white' : 'text-neutral-900')
-            : (theme === 'dark' ? 'text-neutral-500 hover:text-neutral-400' : 'text-neutral-500 hover:text-neutral-700')
-            }`}
-        >
-          <div className={`p-1.5 rounded-full ${activeView === 'notes' ? (theme === 'dark' ? 'bg-neutral-800' : 'bg-neutral-100') : 'bg-transparent'}`}>
-            <Clock className="w-5 h-5" />
-            {savedNotes.length > 0 && (
-              <span className="absolute top-0 right-3 flex items-center justify-center bg-blue-500 text-white text-[9px] font-bold h-4 min-w-[16px] px-1 rounded-full border-2" style={{ borderColor: theme === 'dark' ? '#000' : '#fff' }}>
-                {savedNotes.length}
-              </span>
-            )}
-          </div>
-          <span className="text-[10px] font-medium">Notes</span>
-        </button>
-        <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className={`flex flex-col items-center gap-1 min-w-[64px] transition-all ${theme === 'dark' ? 'text-neutral-500 hover:text-neutral-400' : 'text-neutral-500 hover:text-neutral-700'}`}
-        >
-          <div className="p-1.5 rounded-full bg-transparent">
-            {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-          </div>
-          <span className="text-[10px] font-medium">{theme === 'dark' ? 'Dark' : 'Light'}</span>
-        </button>
-      </nav>
     </div>
   );
 }

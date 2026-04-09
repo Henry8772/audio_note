@@ -1,0 +1,10 @@
+{
+  "name": "Hearo",
+  "short_name": "Hearo",
+  "description": "Real-Time AI Audio Transcription & Translation",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait"
+}
