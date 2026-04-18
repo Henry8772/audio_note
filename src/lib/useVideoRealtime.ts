@@ -31,7 +31,7 @@ export function useVideoRealtime() {
       videoElementRef.current = videoElement || null;
       fallbackStartTimeRef.current = performance.now();
       
-      const sessionId = `soniox-demo-${Date.now()}`;
+      const sessionId = `stream-session-${Date.now()}`;
 
       // Set up Audio Context
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -137,7 +137,7 @@ export function useVideoRealtime() {
         const res = JSON.parse(e.data);
 
         if (res.error_code) {
-          console.error(`Soniox Error: ${res.error_code} - ${res.error_message}`);
+          console.error(`Stream Error: ${res.error_code} - ${res.error_message}`);
           return;
         }
 

@@ -37,7 +37,7 @@ export function useAudioRealtime() {
         setSummaries({});
       }
       
-      const sessionId = `soniox-session-${Date.now()}`;
+      const sessionId = `stream-session-${Date.now()}`;
 
       // 1. Get Microphone
       let micStream: MediaStream | null = null;
@@ -167,7 +167,7 @@ export function useAudioRealtime() {
         const res = JSON.parse(e.data);
 
         if (res.error_code) {
-          console.error(`Soniox Error: ${res.error_code} - ${res.error_message}`);
+          console.error(`Stream Error: ${res.error_code} - ${res.error_message}`);
           return;
         }
 
