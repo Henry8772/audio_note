@@ -1390,8 +1390,7 @@ date: ${note.date}
 
               {/* Workspace */}
               <div className="flex-1 flex flex-col md:grid md:grid-cols-2 min-h-0 relative">
-                {/* Floating Dock */}
-                <div className={`absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-4 p-2 sm:p-3 rounded-2xl backdrop-blur-xl border w-[96%] sm:w-auto overflow-x-auto no-scrollbar ${theme === 'dark' ? 'bg-black/80 md:bg-black/60 border-neutral-800/80 shadow-[0_0_40px_rgba(0,0,0,0.8)]' : 'bg-white/90 md:bg-white/70 border-neutral-200 shadow-[0_4px_30px_rgba(0,0,0,0.1)]'}`}>
+                <div className={`absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center flex-wrap sm:flex-nowrap gap-2 sm:gap-4 p-2 sm:p-3 rounded-2xl backdrop-blur-xl border w-[96%] sm:w-auto ${theme === 'dark' ? 'bg-black/80 md:bg-black/60 border-neutral-800/80 shadow-[0_0_40px_rgba(0,0,0,0.8)]' : 'bg-white/90 md:bg-white/70 border-neutral-200 shadow-[0_4px_30px_rgba(0,0,0,0.1)]'}`}>
 
                   {isListening && (
                     <div className="hidden sm:flex items-center gap-2 text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-2 py-1.5 rounded-md border border-emerald-400/20 uppercase tracking-widest mr-[-4px]">

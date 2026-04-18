@@ -84,13 +84,8 @@ export function useAudioRealtime() {
         sysSource.connect(destination);
       }
 
-      // 4. Fetch the Soniox API Key securely
-      const keyRes = await fetch("/api/soniox-token");
-      if (!keyRes.ok) throw new Error("Failed to get Soniox key");
-      const { apiKey } = await keyRes.json();
-
-      // 5. Connect to Soniox WebSocket
-      const ws = new WebSocket("wss://stt-rt.soniox.com/transcribe-websocket");
+      // Connect to Cloudflare Worker WebSocket Proxy
+      const ws = new WebSocket("wss://audio-transcriber-proxy.henryzhang0608.workers.dev/");
       wsRef.current = ws;
 
       // 6. Set up the Native Browser MediaRecorder using the Mixed Audio
@@ -136,7 +131,6 @@ export function useAudioRealtime() {
           : undefined;
 
         const configPayload: any = {
-          api_key: apiKey,
           model: "stt-rt-v4",
           audio_format: "auto", // WebM is detected automatically
           language_hints: selectedLanguages, // Use dynamic selected languages
@@ -158,7 +152,14 @@ export function useAudioRealtime() {
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          ws.send(e.data);
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (ws.readyState === WebSocket.OPEN && typeof reader.result === 'string') {
+              const base64data = reader.result.split(',')[1];
+              ws.send(base64data);
+            }
+          };
+          reader.readAsDataURL(e.data);
         }
       };
 
