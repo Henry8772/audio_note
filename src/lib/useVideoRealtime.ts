@@ -66,13 +66,8 @@ export function useVideoRealtime() {
         }
       }
 
-      // Fetch the Soniox API Key securely
-      const keyRes = await fetch("/api/soniox-token");
-      if (!keyRes.ok) throw new Error("Failed to get Soniox key");
-      const { apiKey } = await keyRes.json();
-
-      // Connect to Soniox WebSocket
-      const ws = new WebSocket("wss://stt-rt.soniox.com/transcribe-websocket");
+      // Connect to Cloudflare Worker WebSocket Proxy
+      const ws = new WebSocket("wss://audio-transcriber-proxy.henryzhang0608.workers.dev/");
       wsRef.current = ws;
 
       const mediaRecorder = new MediaRecorder(destination.stream, { mimeType: 'audio/webm' });
@@ -109,7 +104,6 @@ export function useVideoRealtime() {
           : undefined;
 
         const configPayload: any = {
-          api_key: apiKey,
           model: "stt-rt-v4",
           audio_format: "auto",
           language_hints: selectedLanguages,
@@ -128,7 +122,14 @@ export function useVideoRealtime() {
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          ws.send(e.data);
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (ws.readyState === WebSocket.OPEN && typeof reader.result === 'string') {
+              const base64data = reader.result.split(',')[1];
+              ws.send(base64data);
+            }
+          };
+          reader.readAsDataURL(e.data);
         }
       };
 

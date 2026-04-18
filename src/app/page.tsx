@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Mic, ArrowRight, Globe, Share2, Layers, CheckCircle2, Check, X, Zap, Play, Square, Loader2, Lock, Volume2, VolumeX } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useAudioRealtime } from "@/lib/useAudioRealtime";
@@ -275,8 +275,6 @@ const GlobalSyncDemo = () => {
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [demo1Muted, setDemo1Muted] = useState(true);
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
   // Demo State
   const { isListening, isConnecting, transcriptItems } = useAppStore();
@@ -366,7 +364,7 @@ export default function LandingPage() {
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#demo" className="hover:text-white transition-colors">Live Demo</a>
           </div>
-          <div className="flex flex-center gap-4">
+          <div className="flex items-center justify-center gap-4">
             <Link
               href="/app"
               className="bg-white text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-neutral-200 hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center gap-2"
