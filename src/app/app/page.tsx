@@ -1409,7 +1409,7 @@ date: ${note.date}
                 <div className={`order-last shrink-0 w-full z-50 flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-t ${theme === 'dark' ? 'bg-[#0a0a0a] border-neutral-800' : 'bg-white border-neutral-200'} shadow-[0_-2px_10px_rgba(0,0,0,0.02)]`}>
                   
                   {/* Left Scrollable Tools Area */}
-                  <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar flex-1 min-w-0 pr-3 sm:pr-6">
+                  <div className="flex items-center gap-2 sm:gap-4 flex-wrap flex-1 min-w-0 pr-3 sm:pr-6 overflow-visible">
 
                   {isListening && (
                     <div className="hidden sm:flex items-center gap-2 text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-2 py-1.5 rounded-md border border-emerald-400/20 uppercase tracking-widest mr-[-4px]">
@@ -1466,7 +1466,7 @@ date: ${note.date}
                   </div>
 
                   {isMicEnabled && (
-                    <div ref={micDropdownRef} className="hidden sm:block relative group shrink-0">
+                    <div ref={micDropdownRef} className="block relative group shrink-0">
                       <button
                         type="button"
                         disabled={isListening}
