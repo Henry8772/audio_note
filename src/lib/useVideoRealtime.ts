@@ -8,7 +8,7 @@ export function useVideoRealtime() {
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   // We keep a local transcript state for the demo to avoid polluting the global app store if we don't want to
-  const { selectedLanguages, workspaceViews } = useAppStore();
+  const { selectedLanguages } = useAppStore();
   const [transcriptItems, setTranscriptItems] = useState<any[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -66,8 +66,20 @@ export function useVideoRealtime() {
         }
       }
 
-      // Connect to Cloudflare Worker WebSocket Proxy
-      const ws = new WebSocket("wss://audio-transcriber-proxy.henryzhang0608.workers.dev/");
+      // Mint a short-lived temporary Soniox key so we can connect directly (no proxy).
+      let sonioxApiKey: string;
+      try {
+        const tokenRes = await fetch("/api/soniox-token", { method: "POST" });
+        if (!tokenRes.ok) throw new Error("token request failed");
+        const tokenData = await tokenRes.json();
+        sonioxApiKey = tokenData.apiKey;
+        if (!sonioxApiKey) throw new Error("no key returned");
+      } catch (e) {
+        throw new Error("Failed to authenticate with the transcription service. Please try again.");
+      }
+
+      // Connect directly to the Soniox real-time WebSocket
+      const ws = new WebSocket("wss://stt-rt.soniox.com/transcribe-websocket");
       wsRef.current = ws;
 
       const mediaRecorder = new MediaRecorder(destination.stream, { mimeType: 'audio/webm' });
@@ -98,38 +110,22 @@ export function useVideoRealtime() {
         setIsConnecting(false);
         setIsListening(true);
 
-        const liveTranslationView = workspaceViews.find(v => v.type === 'live_translation');
-        const translationConfig = liveTranslationView && liveTranslationView.language 
-          ? { type: "one_way", target_language: liveTranslationView.language }
-          : undefined;
-
-        const configPayload: any = {
+        ws.send(JSON.stringify({
+          api_key: sonioxApiKey,
           model: "stt-rt-v4",
           audio_format: "auto",
           language_hints: selectedLanguages,
           enable_language_identification: true,
           enable_speaker_diarization: true,
           enable_endpoint_detection: true,
-        };
-
-        if (translationConfig) {
-          configPayload.translation = translationConfig;
-        }
-
-        ws.send(JSON.stringify(configPayload));
+        }));
         mediaRecorder.start(250);
       };
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (ws.readyState === WebSocket.OPEN && typeof reader.result === 'string') {
-              const base64data = reader.result.split(',')[1];
-              ws.send(base64data);
-            }
-          };
-          reader.readAsDataURL(e.data);
+          // Soniox accepts binary WebM frames directly
+          ws.send(e.data);
         }
       };
 
@@ -182,9 +178,7 @@ export function useVideoRealtime() {
         }
 
         const allTokens = [...finalTokens, ...nonFinalTokens];
-        const originalTokens = allTokens.filter(t => !t.translation_status || t.translation_status === 'none' || t.translation_status === 'original');
-
-        const fullTranscript = renderTokens(originalTokens);
+        const fullTranscript = renderTokens(allTokens);
 
         setTranscriptItems(prev => {
             const copy = [...prev];
@@ -217,7 +211,7 @@ export function useVideoRealtime() {
       setIsConnecting(false);
       setIsListening(false);
     }
-  }, [selectedLanguages, workspaceViews]);
+  }, [selectedLanguages]);
 
   const stopListening = useCallback(() => {
     // Flush remaining chunk to SRT

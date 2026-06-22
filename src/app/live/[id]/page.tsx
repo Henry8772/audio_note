@@ -2,7 +2,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { use, useState } from "react";
-import { Mic, FileText, Loader2, List, Lock } from "lucide-react";
+import { Mic, Loader2, List, Lock } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -106,44 +106,20 @@ export default function LiveSessionViewer({ params }: { params: Promise<{ id: st
             </header>
 
             {/* Main Content */}
-            <main className="max-w-5xl mx-auto p-6 md:p-12">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-
-                    {/* Transcript Column */}
-                    <div className="flex flex-col gap-6">
-                        <h2 className="text-[11px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2 border-b border-neutral-800 pb-4">
-                            <List className="w-3.5 h-3.5" /> Live Transcript
-                        </h2>
-                        <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800/60 p-6 min-h-[50vh]">
-                            {!session.transcript ? (
-                                <p className="text-sm text-neutral-500 italic">Waiting for host to speak...</p>
-                            ) : (
-                                <div className="text-[14px] leading-relaxed whitespace-pre-wrap text-neutral-300">
-                                    {session.transcript}
-                                </div>
-                            )}
-                        </div>
+            <main className="max-w-3xl mx-auto p-6 md:p-12">
+                <div className="flex flex-col gap-6">
+                    <h2 className="text-[12px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2 border-b border-neutral-800 pb-4">
+                        <List className="w-4 h-4" /> Live Transcript
+                    </h2>
+                    <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800/60 p-7 md:p-9 min-h-[60vh]">
+                        {!session.transcript ? (
+                            <p className="text-[17px] text-neutral-500 italic">Waiting for host to speak...</p>
+                        ) : (
+                            <div className="prose prose-invert prose-neutral max-w-none prose-p:text-[18px] prose-p:leading-[1.85] prose-p:text-neutral-200 prose-strong:text-white prose-strong:font-semibold prose-li:text-[18px] prose-li:text-neutral-200 prose-headings:text-white prose-h1:text-[22px] prose-h2:text-[19px]">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{session.transcript}</ReactMarkdown>
+                            </div>
+                        )}
                     </div>
-
-                    {/* Summary Column */}
-                    <div className="flex flex-col gap-6">
-                        <h2 className="text-[11px] font-semibold text-neutral-500 tracking-widest uppercase flex items-center gap-2 border-b border-neutral-800 pb-4">
-                            <FileText className="w-3.5 h-3.5" /> AI Summary
-                        </h2>
-                        <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800/60 p-6 min-h-[50vh]">
-                            {!session.summary ? (
-                                <div className="h-full flex flex-col items-center justify-center opacity-50 text-neutral-500 pt-12">
-                                    <Loader2 className="w-6 h-6 animate-spin mb-4" />
-                                    <p className="text-xs font-medium uppercase tracking-widest">Waiting for notes</p>
-                                </div>
-                            ) : (
-                                <div className="prose prose-invert prose-neutral max-w-none prose-h1:text-[16px] prose-h1:font-bold prose-h1:text-white prose-h2:text-[14px] prose-h2:font-semibold prose-h2:text-neutral-200 prose-p:text-[13.5px] prose-p:leading-relaxed prose-p:text-neutral-300 prose-ul:text-[13.5px] prose-ul:text-neutral-300 font-medium tracking-wide">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{session.summary}</ReactMarkdown>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
                 </div>
             </main>
         </div>

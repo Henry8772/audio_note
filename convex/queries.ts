@@ -21,10 +21,8 @@ export const getSession = query({
             isAuthenticated: isAuthenticated,
             ...(isAuthenticated ? {
                 transcript: session.transcript,
-                summary: session.summary,
             } : {
                 transcript: null,
-                summary: null,
             })
         };
     },

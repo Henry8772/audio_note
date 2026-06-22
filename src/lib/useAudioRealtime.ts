@@ -12,14 +12,8 @@ export function useAudioRealtime() {
     setIsListening,
     setIsConnecting,
     addOrUpdateTranscriptItem,
-    addOrUpdateTranslatedItem,
     clearTranscript,
     selectedLanguages,
-    workspaceViews,
-    transcriptItems,
-    summaries,
-    addSavedNote,
-    setSummaries,
     selectedMicId,
     isMicEnabled,
     isSystemAudioEnabled,
@@ -34,10 +28,22 @@ export function useAudioRealtime() {
       setIsConnecting(true);
       if (!isResume) {
         clearTranscript();
-        setSummaries({});
       }
-      
+
       const sessionId = `stream-session-${Date.now()}`;
+
+      // Mint a short-lived temporary Soniox key so we can connect directly
+      // (no Cloudflare proxy) without exposing the long-lived API key.
+      let sonioxApiKey: string;
+      try {
+        const tokenRes = await fetch("/api/soniox-token", { method: "POST" });
+        if (!tokenRes.ok) throw new Error("token request failed");
+        const tokenData = await tokenRes.json();
+        sonioxApiKey = tokenData.apiKey;
+        if (!sonioxApiKey) throw new Error("no key returned");
+      } catch (e) {
+        throw new Error("Failed to authenticate with the transcription service. Please try again.");
+      }
 
       // 1. Get Microphone
       let micStream: MediaStream | null = null;
@@ -84,8 +90,8 @@ export function useAudioRealtime() {
         sysSource.connect(destination);
       }
 
-      // Connect to Cloudflare Worker WebSocket Proxy
-      const ws = new WebSocket("wss://audio-transcriber-proxy.henryzhang0608.workers.dev/");
+      // Connect directly to the Soniox real-time WebSocket
+      const ws = new WebSocket("wss://stt-rt.soniox.com/transcribe-websocket");
       wsRef.current = ws;
 
       // 6. Set up the Native Browser MediaRecorder using the Mixed Audio
@@ -125,26 +131,16 @@ export function useAudioRealtime() {
         setIsConnecting(false);
         setIsListening(true);
 
-        const liveTranslationView = workspaceViews.find(v => v.type === 'live_translation');
-        const translationConfig = liveTranslationView && liveTranslationView.language 
-          ? { type: "one_way", target_language: liveTranslationView.language }
-          : undefined;
-
-        const configPayload: any = {
+        // Send Initial Soniox Config (temporary key authenticates the stream)
+        ws.send(JSON.stringify({
+          api_key: sonioxApiKey,
           model: "stt-rt-v4",
           audio_format: "auto", // WebM is detected automatically
           language_hints: selectedLanguages, // Use dynamic selected languages
           enable_language_identification: true,
           enable_speaker_diarization: true, // Will label Speaker 1, Speaker 2, etc.
           enable_endpoint_detection: true,
-        };
-
-        if (translationConfig) {
-          configPayload.translation = translationConfig;
-        }
-
-        // Send Initial Soniox Config
-        ws.send(JSON.stringify(configPayload));
+        }));
 
         // Tell the MediaRecorder to send a chunk of audio every 250 milliseconds
         mediaRecorder.start(250);
@@ -152,14 +148,8 @@ export function useAudioRealtime() {
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (ws.readyState === WebSocket.OPEN && typeof reader.result === 'string') {
-              const base64data = reader.result.split(',')[1];
-              ws.send(base64data);
-            }
-          };
-          reader.readAsDataURL(e.data);
+          // Soniox accepts binary WebM frames directly
+          ws.send(e.data);
         }
       };
 
@@ -187,11 +177,7 @@ export function useAudioRealtime() {
 
         // Generate the formatted transcript block
         const allTokens = [...finalTokens, ...nonFinalTokens];
-        const originalTokens = allTokens.filter(t => !t.translation_status || t.translation_status === 'none' || t.translation_status === 'original');
-        const translatedTokens = allTokens.filter(t => t.translation_status === 'translation');
-
-        const fullTranscript = renderTokens(originalTokens);
-        const translatedTranscript = renderTokens(translatedTokens);
+        const fullTranscript = renderTokens(allTokens);
 
         // Update the UI with a unique session bubble
         addOrUpdateTranscriptItem({
@@ -200,15 +186,6 @@ export function useAudioRealtime() {
           text: fullTranscript,
           isFinal: res.finished || false
         });
-
-        if (translatedTokens.length > 0) {
-          addOrUpdateTranslatedItem({
-            id: `${sessionId}-translated`,
-            role: "user",
-            text: translatedTranscript,
-            isFinal: res.finished || false
-          });
-        }
       };
 
       ws.onerror = (e) => console.error("WebSocket error:", e);
@@ -220,41 +197,14 @@ export function useAudioRealtime() {
       setIsConnecting(false);
       setIsListening(false);
     }
-  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, addOrUpdateTranslatedItem, clearTranscript, selectedLanguages, workspaceViews, setSummaries, selectedMicId, isMicEnabled, isSystemAudioEnabled]);
+  }, [setIsListening, setIsConnecting, addOrUpdateTranscriptItem, clearTranscript, selectedLanguages, selectedMicId, isMicEnabled, isSystemAudioEnabled]);
 
   const stopListening = useCallback(() => {
     // 0. Guard against multiple calls
     if (!useAppStore.getState().isListening) return;
 
-    // 1. Auto-save before destroying the current streams, if we have content
-    const currentItems = useAppStore.getState().transcriptItems;
-    const currentSummaries = useAppStore.getState().summaries;
-    
-    if (currentItems.length > 0) {
-      const now = new Date();
-      
-      // Determine a smart title based on summary or fall back to generic timestamp
-      let title = "Meeting Note";
-      const defaultLangSummary = currentSummaries['en'] || Object.values(currentSummaries)[0];
-      
-      if (defaultLangSummary) {
-        // Try getting the first line heading, e.g "# Discussion about X" -> "Discussion about X"
-        const firstLine = defaultLangSummary.split('\\n')[0];
-        if (firstLine && firstLine.startsWith('# ')) {
-          title = firstLine.replace('# ', '').trim().slice(0, 50);
-        } else if (firstLine) {
-          title = firstLine.substring(0, 50);
-        }
-      }
-      
-      addSavedNote({
-        id: crypto.randomUUID(),
-        title: title || `Note ${now.toLocaleTimeString()}`,
-        date: now.toISOString(),
-        summaries: currentSummaries,
-        transcriptItems: [...currentItems],
-      });
-    }
+    // Note: saving is handled in the app page (de-duped auto-save + title generation),
+    // which fires when isListening flips to false.
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
@@ -277,7 +227,7 @@ export function useAudioRealtime() {
     setIsConnecting(false);
     
     // UI Cleanup to prep for next run is done on connect() so user can still see what they just recorded.
-  }, [setIsListening, setIsConnecting, addSavedNote]);
+  }, [setIsListening, setIsConnecting]);
 
   return { connect, stopListening };
 }

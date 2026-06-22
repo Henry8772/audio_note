@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Monitor, Square, Loader2, List, FileText, LayoutDashboard, Clock, MoreVertical, Trash2, Lock, Save, RadioTower, Download, Upload, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play, Search, Copy } from "lucide-react";
+import { Mic, MicOff, Monitor, Square, Loader2, List, LayoutDashboard, Clock, Trash2, Lock, Save, RadioTower, Download, Upload, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play, Search, Copy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -49,28 +49,14 @@ export default function Home() {
     isListening,
     isConnecting,
     transcriptItems,
-    summaries,
-    setSummaries,
-    lastSummaryTime,
-    setLastSummaryTime,
-    lastSummaryIndex,
-    setLastSummaryIndex,
-    lastSummarizedTextLength,
-    setLastSummarizedTextLength,
     selectedLanguages,
     setSelectedLanguages,
-    workspaceViews,
-    setWorkspaceViews,
-    addWorkspaceView,
-    removeWorkspaceView,
-    translatedTranscriptItems,
-    translationLanguages,
-    setTranslationLanguages,
     activeView,
     setActiveView,
     savedNotes,
     deleteSavedNote,
     addSavedNote,
+    updateSavedNote,
     isAuthenticated,
     setIsAuthenticated,
     userEmail,
@@ -96,7 +82,6 @@ export default function Home() {
 
   const createSession = useMutation(api.mutations.createSession);
   const updateTranscriptMutation = useMutation(api.mutations.updateTranscript);
-  const updateSummaryMutation = useMutation(api.mutations.updateSummary);
   const endSession = useMutation(api.mutations.endSession);
 
   const [isSharingLive, setIsSharingLive] = useState(false);
@@ -106,23 +91,16 @@ export default function Home() {
 
   const { connect, stopListening } = useAudioRealtime();
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
-  const translatedTranscriptContainerRef = useRef<HTMLDivElement>(null);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const micDropdownRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
-  const [showAddViewModal, setShowAddViewModal] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showMicDropdown, setShowMicDropdown] = useState(false);
-  const [translationSearch, setTranslationSearch] = useState("");
-  const [mobileTab, setMobileTab] = useState<'transcript' | 'translation'>('transcript');
 
-  const filteredTranslationLanguages = AVAILABLE_LANGUAGES.filter(lang => 
-    lang.label.toLowerCase().includes(translationSearch.toLowerCase()) || 
-    lang.native.toLowerCase().includes(translationSearch.toLowerCase())
-  );
-  const closestTranslationLanguage = translationSearch.trim() === "" ? null : filteredTranslationLanguages[0];
+  // Tracks the note id for the current recording session so repeated/auto saves
+  // update one note instead of creating duplicates.
+  const currentNoteIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -140,46 +118,6 @@ export default function Home() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showLanguageDropdown, showMicDropdown]);
-
-  useEffect(() => {
-    if (!activeWorkspaceId && workspaceViews.length > 0) {
-      setActiveWorkspaceId(workspaceViews[0].id);
-    } else if (activeWorkspaceId && !workspaceViews.find(v => v.id === activeWorkspaceId)) {
-      if (workspaceViews.length > 0) setActiveWorkspaceId(workspaceViews[0].id);
-      else setActiveWorkspaceId(null);
-    }
-  }, [workspaceViews, activeWorkspaceId]);
-
-  // Migrate legacy AI Notes targeting non-English languages to Live Translation
-  useEffect(() => {
-    const hasLegacyViews = workspaceViews.some(v => v.type === 'ai_notes' && v.language !== 'en');
-    if (hasLegacyViews && setWorkspaceViews) {
-      const migratedViews = workspaceViews.map(v =>
-        (v.type === 'ai_notes' && v.language !== 'en')
-          ? { ...v, type: 'live_translation' as 'live_translation' }
-          : v
-      );
-      // Remove duplicates for live_translation (since only 1 is supported)
-      const liveTranslations = migratedViews.filter(v => v.type === 'live_translation');
-      let finalViews = migratedViews;
-      if (liveTranslations.length > 1) {
-        const firstId = liveTranslations[0].id;
-        finalViews = migratedViews.filter(v => v.type !== 'live_translation' || v.id === firstId);
-      }
-      setWorkspaceViews(finalViews);
-    }
-  }, [workspaceViews, setWorkspaceViews]);
-
-  // Auto-scroll translated transcript
-  useEffect(() => {
-    if (translatedTranscriptContainerRef.current) {
-      const container = translatedTranscriptContainerRef.current;
-      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
-      if (isAtBottom) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }
-  }, [translatedTranscriptItems, activeView]);
 
   // Auth State
   const [email, setEmail] = useState('');
@@ -329,66 +267,6 @@ export default function Home() {
     }
   }, [transcriptItems, activeView]);
 
-  const [isSummarizing, setIsSummarizing] = useState(false);
-
-  const triggerSummary = async () => {
-    if (isSummarizing) return;
-    const state = useAppStore.getState();
-    const currentItems = state.transcriptItems;
-    let currentIndex = state.lastSummaryIndex;
-    const currentSummaries = state.summaries;
-    const currentTranslationLanguages = workspaceViews.filter(v => v.type === 'ai_notes' && v.language).map(v => v.language);
-
-    let lastItemHasGrown = false;
-    if (currentItems.length > 0 && currentItems.length === currentIndex) {
-      const lastItem = currentItems[currentItems.length - 1];
-      if (lastItem.text.length > state.lastSummarizedTextLength + 10) {
-        lastItemHasGrown = true;
-        currentIndex = currentIndex - 1; // Step back to include the last item
-      }
-    }
-
-    if (currentItems.length <= currentIndex) return;
-
-    try {
-      setIsSummarizing(true);
-      const now = Date.now();
-      const newItems = currentItems.slice(currentIndex);
-      const textToSummarize = newItems
-        .map(i => `${i.role === 'user' ? 'Speaker' : 'Model'}: ${i.text}`)
-        .join('\\n');
-
-      const res = await fetch('/api/summarize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcript: textToSummarize,
-          previousSummary: currentSummaries,
-          targetLanguages: currentTranslationLanguages
-        })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.summaries) {
-          setSummaries(data.summaries);
-          setLastSummaryTime(now);
-          setLastSummaryIndex(currentItems.length);
-          if (currentItems.length > 0) {
-            useAppStore.getState().setLastSummarizedTextLength(currentItems[currentItems.length - 1].text.length);
-          }
-        }
-      } else {
-        toast.error("Failed to generate summary from server.");
-      }
-    } catch (e) {
-      toast.error("Network error while generating summary.");
-    } finally {
-      setIsSummarizing(false);
-    }
-  };
-
-
   // Export Logic
   const handleExportNotes = async () => {
     if (savedNotes.length === 0) return toast.error("No notes to export.");
@@ -409,16 +287,12 @@ date: ${note.date}
 ---
 
 `;
-      // For the human readable body, we will join all summaries together
-      const body = Object.entries(note.summaries).map(([lang, text]) => {
-        return `## ${lang.toUpperCase()}\\n\\n${text}\\n`;
-      }).join("\\n") || "*No summary available*";
+      // Human-readable body: the transcript itself.
+      const body = note.transcriptItems.map(i => i.text).join("\n\n") || "*No transcript available*";
 
-      // Store the raw JSON object representation of the summaries for perfect import rebuild
-      const hiddenSummariesData = `\n\n<!-- AUDIO_NOTE_SUMMARIES_START\n${JSON.stringify(note.summaries)}\nAUDIO_NOTE_SUMMARIES_END -->`;
       const hiddenTranscriptData = `\n\n<!-- AUDIO_NOTE_DATA_START\n${JSON.stringify(note.transcriptItems)}\nAUDIO_NOTE_DATA_END -->`;
 
-      const fileContent = frontmatter + body + hiddenSummariesData + hiddenTranscriptData;
+      const fileContent = frontmatter + body + hiddenTranscriptData;
       folder.file(filename, fileContent);
     });
 
@@ -437,14 +311,11 @@ date: ${note.date}
 ---
 
 `;
-    const body = Object.entries(note.summaries).map(([lang, text]) => {
-      return `## ${lang.toUpperCase()}\\n\\n${text}\\n`;
-    }).join("\\n") || "*No summary available*";
+    const body = note.transcriptItems.map(i => i.text).join("\n\n") || "*No transcript available*";
 
-    const hiddenSummariesData = `\n\n<!-- AUDIO_NOTE_SUMMARIES_START\n${JSON.stringify(note.summaries)}\nAUDIO_NOTE_SUMMARIES_END -->`;
     const hiddenTranscriptData = `\n\n<!-- AUDIO_NOTE_DATA_START\n${JSON.stringify(note.transcriptItems)}\nAUDIO_NOTE_DATA_END -->`;
 
-    const fileContent = frontmatter + body + hiddenSummariesData + hiddenTranscriptData;
+    const fileContent = frontmatter + body + hiddenTranscriptData;
 
     const blob = new Blob([fileContent], { type: "text/markdown;charset=utf-8" });
     saveAs(blob, filename);
@@ -483,22 +354,9 @@ date: ${note.date}
       // Parse body and hidden data
       const remainder = text.replace(fmMatch[0], '').trim();
 
-      const summariesMatch = remainder.match(/<!-- AUDIO_NOTE_SUMMARIES_START\n([\s\S]*?)\nAUDIO_NOTE_SUMMARIES_END -->/);
       const dataMatch = remainder.match(/<!-- AUDIO_NOTE_DATA_START\n([\s\S]*?)\nAUDIO_NOTE_DATA_END -->/);
 
-      let summaries: Record<string, string> = {};
       let transcriptItems: TranscriptItem[] = [];
-
-      if (summariesMatch) {
-        try {
-          summaries = JSON.parse(summariesMatch[1].trim());
-        } catch (err) {
-          console.error("Failed to parse summaries JSON for", title, err);
-        }
-      } else {
-        // Fallback legacy support
-        summaries = { en: remainder.replace(dataMatch ? dataMatch[0] : '', '').trim() };
-      }
 
       if (dataMatch) {
         try {
@@ -506,13 +364,18 @@ date: ${note.date}
         } catch (err) {
           // silently handle
         }
+      } else {
+        // Fallback: treat the whole body as a single transcript block
+        const bodyText = remainder.trim();
+        if (bodyText) {
+          transcriptItems = [{ id: crypto.randomUUID(), role: 'user', text: bodyText, isFinal: true }];
+        }
       }
 
       addSavedNote({
         id,
         title,
         date,
-        summaries,
         transcriptItems
       });
       importCount++;
@@ -568,11 +431,11 @@ date: ${note.date}
     }
   };
 
-  // Push Transcript Updates to Convex
+  // Push Transcript Updates to Convex (Markdown — item text already carries **Speaker N:** formatting)
   useEffect(() => {
     if (liveSessionId && liveSessionHostId && transcriptItems.length > 0) {
       const transcriptText = transcriptItems
-        .map(i => `${i.role === 'user' ? 'Speaker' : 'AI Assistant'}: ${i.text}`)
+        .map(i => i.text)
         .join('\n\n');
 
       updateTranscriptMutation({
@@ -582,21 +445,6 @@ date: ${note.date}
       }).catch((err: any) => toast.error("Connection issue: Live transcript may not be visible to viewers."));
     }
   }, [transcriptItems, liveSessionId, liveSessionHostId, updateTranscriptMutation]);
-
-  // Push Summary Updates to Convex
-  useEffect(() => {
-    if (liveSessionId && liveSessionHostId && Object.keys(summaries).length > 0) {
-      const summaryText = Object.entries(summaries)
-        .map(([lang, text]) => `## ${lang.toUpperCase()}\n\n${text}`)
-        .join('\n\n');
-
-      updateSummaryMutation({
-        sessionId: liveSessionId as any,
-        summary: summaryText,
-        hostId: liveSessionHostId
-      }).catch((err: any) => toast.error("Connection issue: Live summary may not be visible."));
-    }
-  }, [summaries, liveSessionId, liveSessionHostId, updateSummaryMutation]);
 
   // End session when stopped listening
   useEffect(() => {
@@ -741,33 +589,100 @@ date: ${note.date}
     }
   };
 
-  const handleManualSave = () => {
-    if (transcriptItems.length === 0) return;
-    const now = new Date();
+  // Signature of the transcript used to detect "same content" saves.
+  const computeContentHash = (items: TranscriptItem[]) =>
+    items.map(i => `${i.id}:${i.text}`).join('|');
 
-    let title = "Meeting Note";
-    const defaultLangSummary = summaries['en'] || Object.values(summaries)[0];
+  const savingRef = useRef(false);
 
-    if (defaultLangSummary) {
-      const firstLine = defaultLangSummary.split('\n')[0];
-      if (firstLine && firstLine.startsWith('# ')) {
-        title = firstLine.replace('# ', '').trim().slice(0, 50);
-      } else if (firstLine) {
-        title = firstLine.substring(0, 50);
-      }
+  // Centralized, de-duplicated save. Repeated saves of the same content update the
+  // same note (or no-op); a short title is generated from the content on each change.
+  const saveNote = async (opts?: { manual?: boolean }) => {
+    const items = useAppStore.getState().transcriptItems;
+    if (items.length === 0) return;
+    if (savingRef.current) return;
+
+    const hash = computeContentHash(items);
+    const existingId = currentNoteIdRef.current;
+    const existing = existingId
+      ? useAppStore.getState().savedNotes.find(n => n.id === existingId)
+      : null;
+
+    // Dedup short-circuit: identical content already saved → nothing to do.
+    if (existing && existing.contentHash === hash) {
+      if (opts?.manual) { setIsSaved(true); setTimeout(() => setIsSaved(false), 2000); }
+      return;
     }
 
-    addSavedNote({
-      id: crypto.randomUUID(),
-      title: title || `Note ${now.toLocaleTimeString()}`,
-      date: now.toISOString(),
-      summaries: { ...summaries },
-      transcriptItems: [...transcriptItems],
-    });
+    savingRef.current = true;
+    try {
+      const now = new Date();
+      const transcriptText = items.map(i => i.text).join('\n\n');
 
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2000);
+      // Reserve the note id up front so concurrent saves target the same note.
+      const id = existing?.id ?? crypto.randomUUID();
+      if (!existing) currentNoteIdRef.current = id;
+
+      // Generate a short title via the cheapest model.
+      let title = '';
+      try {
+        const res = await fetch('/api/title', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript: transcriptText }),
+        });
+        if (res.ok) {
+          const d = await res.json();
+          title = d.title || '';
+        }
+      } catch { /* fall back below */ }
+
+      if (!title) {
+        title = existing?.title || `Note ${now.toLocaleTimeString()}`;
+      }
+
+      const latestItems = useAppStore.getState().transcriptItems;
+      const payload = {
+        title,
+        date: now.toISOString(),
+        transcriptItems: [...latestItems],
+        contentHash: computeContentHash(latestItems),
+      };
+
+      if (existing) {
+        updateSavedNote(id, payload);
+      } else {
+        addSavedNote({ id, ...payload });
+      }
+
+      if (opts?.manual) { setIsSaved(true); setTimeout(() => setIsSaved(false), 2000); }
+    } finally {
+      savingRef.current = false;
+    }
   };
+
+  const handleManualSave = () => { saveNote({ manual: true }); };
+
+  // Start a fresh note whenever a new recording clears the transcript.
+  useEffect(() => {
+    if (transcriptItems.length === 0) currentNoteIdRef.current = null;
+  }, [transcriptItems.length]);
+
+  // Debounced auto-save: fires ~8s after the transcript stops changing.
+  useEffect(() => {
+    if (transcriptItems.length === 0) return;
+    const t = setTimeout(() => { saveNote(); }, 8000);
+    return () => clearTimeout(t);
+  }, [transcriptItems]);
+
+  // Save once more when recording stops.
+  const prevListeningRef = useRef(isListening);
+  useEffect(() => {
+    if (prevListeningRef.current && !isListening) {
+      saveNote();
+    }
+    prevListeningRef.current = isListening;
+  }, [isListening]);
 
   return (
     <div className={`h-[100dvh] w-full flex flex-col md:flex-row font-sans overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] ${theme === 'dark' ? 'bg-black text-neutral-200 selection:bg-neutral-800 selection:text-white' : 'bg-[#f4f4f5] text-neutral-800 selection:bg-neutral-200 selection:text-neutral-900'}`}>
@@ -1085,135 +1000,6 @@ date: ${note.date}
         )}
       </AnimatePresence>
 
-      {/* Add View Modal Overlay */}
-      <AnimatePresence>
-        {showAddViewModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] bg-black/90 backdrop-blur-md flex items-center justify-center px-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setShowAddViewModal(false);
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className="w-full max-w-[420px] p-8 sm:p-10 bg-[#050505] border border-neutral-800/80 rounded-3xl shadow-[0_0_80px_-15px_rgba(255,255,255,0.08)] flex flex-col relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-
-              <button
-                onClick={() => setShowAddViewModal(false)}
-                className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900/40 text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-200"
-              >
-                <span className="sr-only">Close</span>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-
-              <div className="flex flex-col items-center mb-6 relative">
-                <h1 className="text-xl font-semibold text-white tracking-tight">Add Workspace View</h1>
-                <p className="text-[14px] text-neutral-400 mt-2 text-center leading-relaxed">
-                  Choose a widget to add to your right panel.
-                </p>
-              </div>
-
-              <div className="w-full flex flex-col gap-4">
-                <div className="space-y-3">
-                  <h3 className="text-xs font-semibold text-neutral-500 tracking-wider uppercase mb-1">AI Notes</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    {AVAILABLE_LANGUAGES.filter(l => l.code === 'en').map(lang => (
-                      <button
-                        key={`ainote-${lang.code}`}
-                        onClick={() => {
-                          const id = crypto.randomUUID();
-                          addWorkspaceView({ id: id, type: 'ai_notes', language: lang.code });
-                          setActiveWorkspaceId(id);
-                          setShowAddViewModal(false);
-                        }}
-                        className="py-2.5 px-2 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex flex-col items-center gap-1 group"
-                      >
-                        <FileText className="w-4 h-4 text-neutral-500 group-hover:text-blue-400 mb-1.5" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider">{lang.label}</span>
-                        {lang.code !== 'en' && <span className="text-[11px] font-medium text-neutral-400 mt-0.5">{lang.native}</span>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-3 mt-2">
-                  <h3 className="text-xs font-semibold text-neutral-500 tracking-wider uppercase mb-1">Real-Time Translation</h3>
-                  
-                  <div className="relative mb-2">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                    <input
-                      type="text"
-                      placeholder="Enter language to search..."
-                      value={translationSearch}
-                      onChange={(e) => setTranslationSearch(e.target.value)}
-                      className="w-full bg-[#111] border border-neutral-800 rounded-xl pl-9 pr-3 py-2.5 text-sm text-white focus:outline-none focus:border-neutral-700 transition"
-                    />
-                  </div>
-
-                  {translationSearch.trim() === "" ? (
-                    <div className="grid grid-cols-3 gap-2">
-                      {AVAILABLE_LANGUAGES.slice(0, 6).map(lang => (
-                        <button
-                          key={`live-${lang.code}`}
-                          onClick={() => {
-                            if (workspaceViews.some(v => v.type === 'live_translation')) {
-                              toast.error("Only 1 Live Translation view is supported per session.");
-                              return;
-                            }
-                            const id = crypto.randomUUID();
-                            addWorkspaceView({ id: id, type: 'live_translation', language: lang.code });
-                            setActiveWorkspaceId(id);
-                            setShowAddViewModal(false);
-                          }}
-                          className="py-2.5 px-2 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex flex-col items-center gap-1 group"
-                        >
-                          <RadioTower className="w-4 h-4 text-neutral-500 group-hover:text-blue-400 mb-1.5" />
-                          <span className="text-[11px] font-bold uppercase tracking-wider">{lang.label}</span>
-                          {lang.code !== 'en' && <span className="text-[11px] font-medium text-neutral-400 mt-0.5">{lang.native}</span>}
-                        </button>
-                      ))}
-                    </div>
-                  ) : closestTranslationLanguage ? (
-                    <button
-                      onClick={() => {
-                        if (workspaceViews.some(v => v.type === 'live_translation')) {
-                          toast.error("Only 1 Live Translation view is supported per session.");
-                          return;
-                        }
-                        const id = crypto.randomUUID();
-                        addWorkspaceView({ id: id, type: 'live_translation', language: closestTranslationLanguage.code });
-                        setActiveWorkspaceId(id);
-                        setShowAddViewModal(false);
-                        setTranslationSearch("");
-                      }}
-                      className="w-full py-3 px-4 bg-[#111] hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 hover:border-neutral-700 transition flex items-center justify-between group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <RadioTower className="w-5 h-5 text-neutral-400 group-hover:text-blue-400 transition" />
-                        <div className="flex flex-col items-start">
-                          <span className="text-sm font-bold uppercase tracking-wider">{closestTranslationLanguage.label}</span>
-                          {closestTranslationLanguage.code !== 'en' && <span className="text-xs font-medium text-neutral-500">{closestTranslationLanguage.native}</span>}
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-semibold bg-neutral-800/80 text-neutral-400 group-hover:bg-blue-500/20 group-hover:text-blue-400 px-2.5 py-1 rounded-md transition border border-neutral-700/50 group-hover:border-blue-500/30">Add View</span>
-                    </button>
-                  ) : (
-                    <div className="text-[11px] text-neutral-500 text-center py-3 bg-[#111] rounded-xl border border-neutral-800">
-                      No matching language found.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
       {/* Share Modal Overlay */}
       <AnimatePresence>
         {showShareModal && (
@@ -1683,17 +1469,13 @@ date: ${note.date}
                   </div>
                 </div>
 
-                {/* Main Content Areas */}
-                <div className="flex-1 flex flex-col md:grid md:grid-cols-2 min-h-0 relative">
+                {/* Main Content Area */}
+                <div className="flex-1 flex flex-col min-h-0 relative">
 
-                {/* Left Pane: Raw Transcript */}
-                <div className={`${mobileTab === 'transcript' ? 'flex' : 'hidden'} md:flex flex-col h-full min-h-0 overflow-hidden relative ${theme === 'dark' ? 'bg-[#0a0a0a] border-r border-neutral-800' : 'bg-white border-r border-neutral-200'}`}>
+                {/* Live Transcript */}
+                <div className={`flex flex-col h-full min-h-0 overflow-hidden relative ${theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
                   <div className={`min-h-[48px] border-b flex items-center justify-between px-3 sm:px-6 shrink-0 ${theme === 'dark' ? 'border-neutral-800/80 bg-black' : 'border-neutral-200/80 bg-[#f4f4f5]'}`}>
-                    <div className={`md:hidden flex p-0.5 rounded-lg border shrink-0 ${theme === 'dark' ? 'bg-[#111] border-neutral-800' : 'bg-neutral-100/50 border-neutral-200/50'}`}>
-                      <button onClick={() => setMobileTab('transcript')} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${mobileTab === 'transcript' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : 'text-neutral-500'}`}>Transcript</button>
-                      <button onClick={() => setMobileTab('translation')} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${mobileTab === 'translation' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : 'text-neutral-500'}`}>AI Notes</button>
-                    </div>
-                    <h2 className={`hidden md:flex text-[10px] font-semibold tracking-widest uppercase items-center gap-2 ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-600'}`}>
+                    <h2 className={`flex text-[10px] font-semibold tracking-widest uppercase items-center gap-2 ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-600'}`}>
                       <List className="w-3.5 h-3.5" /> Live Transcript
                     </h2>
                     <div className="flex items-center gap-1 sm:gap-2">
@@ -1760,158 +1542,6 @@ date: ${note.date}
                   </div>
                 </div>
 
-                {/* Right Pane: Customizable Workspace Tabs */}
-                <div className={`${mobileTab === 'translation' ? 'flex' : 'hidden'} md:flex flex-col h-full relative min-h-0 overflow-hidden ${theme === 'dark' ? 'bg-black border-l border-neutral-800/80' : 'bg-[#f4f4f5] border-l border-neutral-200'}`}>
-                  {/* TWO-ROW HEADER ON MOBILE, SINGLE ROW ON DESKTOP */}
-                  <div className={`flex flex-col md:flex-row md:items-center px-2 sm:px-4 border-b ${theme === 'dark' ? 'border-neutral-800/80 bg-[#0a0a0a]' : 'border-neutral-200 bg-white'}`}>
-
-                    {/* Mobile: Top Row with Tabs & Actions | Desktop: Right Action Row */}
-                    <div className="flex items-center justify-between w-full md:w-auto md:w-fit py-2 md:py-0 md:min-h-[48px] border-b md:border-0 border-neutral-200 dark:border-neutral-800/50 md:order-last md:ml-4">
-                      
-                      {/* Mobile Main Tab Switcher */}
-                      <div className={`md:hidden flex mr-2 p-0.5 rounded-lg border shrink-0 ${theme === 'dark' ? 'bg-[#111] border-neutral-800' : 'bg-neutral-100/50 border-neutral-200/50'}`}>
-                        <button onClick={() => setMobileTab('transcript')} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${mobileTab === 'transcript' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : 'text-neutral-500'}`}>Transcript</button>
-                        <button onClick={() => setMobileTab('translation')} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${mobileTab === 'translation' ? (theme === 'dark' ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm border border-neutral-200') : 'text-neutral-500'}`}>AI Notes</button>
-                      </div>
-
-                      {/* Action buttons (Save, Take Note) */}
-                      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                      <button
-                        onClick={() => {
-                          const view = workspaceViews.find(v => v.id === activeWorkspaceId);
-                          if (!view) return;
-                          if (view.type === 'ai_notes') {
-                            const text = summaries[view.language || 'en'];
-                            if (text) {
-                              navigator.clipboard.writeText(text);
-                              toast.success("Summary copied to clipboard!");
-                            } else {
-                              toast.error("Nothing to copy yet.");
-                            }
-                          } else if (view.type === 'live_translation') {
-                            const text = translatedTranscriptItems.map(item => item.text).join('\n\n');
-                            if (text) {
-                              navigator.clipboard.writeText(text);
-                              toast.success("Translation copied to clipboard!");
-                            } else {
-                              toast.error("Nothing to copy yet.");
-                            }
-                          }
-                        }}
-                        className={`text-[10px] px-2.5 py-1.5 rounded-md border flex items-center gap-1.5 font-bold uppercase tracking-widest transition-colors ${theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-neutral-300 hover:text-white hover:bg-neutral-800' : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm'}`}
-                        title="Copy Active Content"
-                      >
-                        <Copy className="w-3 h-3" />
-                        <span className="hidden sm:inline">Copy</span>
-                      </button>
-
-                      <button
-                        onClick={handleManualSave}
-                        disabled={transcriptItems.length === 0}
-                        className={`text-[10px] px-2.5 py-1.5 rounded-md border flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${theme === 'dark' ? 'border-neutral-700 bg-[#111] text-white hover:bg-neutral-800' : 'border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 shadow-sm'}`}
-                        title="Save Note to Library"
-                      >
-                        {isSaved ? <Save className="w-3 h-3 text-emerald-400" /> : <Save className="w-3 h-3 text-neutral-400" />}
-                        <span className="hidden sm:inline">{isSaved ? "SAVED" : "SAVE"}</span>
-                      </button>
-
-                      <button
-                        onClick={triggerSummary}
-                        disabled={
-                          isSummarizing ||
-                          isConnecting ||
-                          transcriptItems.length === 0 ||
-                          (transcriptItems.length === lastSummaryIndex && transcriptItems[transcriptItems.length - 1].text.length <= lastSummarizedTextLength + 10)
-                        }
-                        className={`text-[10px] px-2.5 py-1.5 rounded-md border flex items-center gap-1.5 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${theme === 'dark' ? 'border-neutral-700 bg-neutral-800 text-white hover:bg-neutral-700' : 'border-neutral-300 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-neutral-900 shadow-sm'}`}
-                      >
-                        {isSummarizing ? <Loader2 className="w-3 h-3 animate-spin text-neutral-400" /> : <FileText className="w-3 h-3 text-neutral-400" />}
-                        <span className="hidden sm:inline">{isSummarizing ? "VALIDATING" : "TAKE NOTE"}</span>
-                      </button>
-                    </div>
-                    </div> {/* Close Top Row / Action Row */}
-
-                    {/* The Workspace Tabs (Mobile: Bottom Row, Desktop: Left/flex-1) */}
-                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-2 md:py-0 md:min-h-[48px] flex-1 min-w-0 md:order-first md:pr-2">
-                      {workspaceViews.map((view) => (
-                        <button
-                          key={view.id}
-                          onClick={() => setActiveWorkspaceId(view.id)}
-                          className={`flex items-center shrink-0 gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors whitespace-nowrap border ${activeWorkspaceId === view.id ? (theme === 'dark' ? 'bg-neutral-800 border-neutral-700 text-white shadow-sm' : 'bg-white shadow-sm border-neutral-200 text-neutral-900') : (theme === 'dark' ? 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-300 hover:bg-neutral-900' : 'bg-transparent border-transparent text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200/50')}`}
-                        >
-                          {view.type === 'ai_notes' ? <FileText className="w-3 h-3" /> : <RadioTower className="w-3 h-3" />}
-                          {view.type === 'ai_notes' ? 'AI NOTES' : 'TRANSLATION'}
-                          <span className="opacity-50 text-[9px] uppercase">[{AVAILABLE_LANGUAGES.find(l => l.code === view.language)?.label || view.language}]</span>
-
-                          <div onClick={(e) => {
-                            e.stopPropagation();
-                            removeWorkspaceView(view.id);
-                          }} className={`p-0.5 rounded-sm transition-colors ${theme === 'dark' ? 'hover:bg-neutral-700/50 text-neutral-400 hover:text-white' : 'hover:bg-neutral-200 text-neutral-400 hover:text-neutral-900'}`}>
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                          </div>
-                        </button>
-                      ))}
-
-                      <button
-                        onClick={() => setShowAddViewModal(true)}
-                        className={`flex items-center justify-center w-7 h-7 rounded-sm border transition-all ml-1 shrink-0 ${theme === 'dark' ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800 hover:border-neutral-700' : 'bg-white border-neutral-200 shadow-sm text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'}`}
-                        title="Add Workspace View"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
-                      </button>
-                    </div>
-
-                  </div> {/* Close Parent Two-Row Flex Header */}
-
-                  {/* Rendering Active View Payload */}
-                  <div className="flex-1 min-h-0 overflow-hidden relative">
-                    {workspaceViews.map((view) => {
-                      if (view.id !== activeWorkspaceId) return null;
-
-                      if (view.type === 'ai_notes') {
-                        const summaryText = summaries[view.language || 'en'];
-                        return (
-                          <div key={view.id} className="h-full flex flex-col p-6 pb-6 overflow-y-auto">
-                            {!summaryText ? (
-                              <div className="h-full flex flex-col items-center justify-center text-neutral-600 opacity-50">
-                                <FileText className="w-8 h-8 mb-2" />
-                                <p className="text-xs font-medium">Waiting for Summary</p>
-                              </div>
-                            ) : (
-                              <div className={`prose max-w-none prose-h1:text-[16px] prose-h1:font-bold prose-h1:tracking-tight prose-h2:text-[14px] prose-h2:font-semibold prose-p:text-[13.5px] prose-p:leading-relaxed prose-ul:text-[13.5px] font-medium tracking-wide ${theme === 'dark' ? 'prose-invert prose-neutral prose-h1:text-white prose-h2:text-neutral-100 prose-p:text-neutral-200 prose-a:text-white prose-ul:text-neutral-200 prose-li:marker:text-neutral-600' : 'prose-neutral prose-h1:text-neutral-900 prose-h2:text-neutral-800 prose-p:text-neutral-700 prose-a:text-neutral-900 prose-ul:text-neutral-700 prose-li:marker:text-neutral-400'}`}>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{summaryText}</ReactMarkdown>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      }
-
-                      if (view.type === 'live_translation') {
-                        return (
-                          <div key={view.id} className="h-full flex flex-col pt-6 px-6 sm:px-8 pb-6 overflow-y-auto space-y-6" ref={translatedTranscriptContainerRef}>
-                            {translatedTranscriptItems.length === 0 ? (
-                              <div className="flex flex-col items-center justify-center h-full text-neutral-500 opacity-60">
-                                <RadioTower className="w-8 h-8 mb-3 opacity-50" />
-                                <p className="text-[13px]">Listening for translations...</p>
-                              </div>
-                            ) : (
-                              translatedTranscriptItems.map((item, index) => (
-                                <div key={index} className="flex group">
-                                  <div className={`text-[17px] leading-[1.8] whitespace-pre-wrap break-words font-medium prose prose-p:my-2 prose-p:leading-[1.8] max-w-none ${theme === 'dark' ? 'prose-invert' : ''} ${item.isFinal ? (theme === 'dark' ? 'text-white' : 'text-neutral-900') : (theme === 'dark' ? 'text-neutral-400 italic' : 'text-neutral-500 italic')}`}>
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        );
-                      }
-
-                      return null;
-                    })}
-                  </div>
-
-                </div>
                 </div> {/* End of Main Content Areas Grid */}
               </div> {/* End of Workspace Container */}
             </motion.div>
@@ -1994,7 +1624,7 @@ date: ${note.date}
                               </span>
                             </div>
                             <p className="text-xs text-neutral-500 mt-2 line-clamp-2 leading-relaxed">
-                              {note.summaries['en'] ? note.summaries['en'].replace(/[#*`]/g, '') : Object.values(note.summaries)[0]?.replace(/[#*`]/g, '') || "No summary available."}
+                              {note.transcriptItems.map(i => i.text).join(' ').replace(/[#*`]/g, '') || "No transcript available."}
                             </p>
                           </div>
                         )
@@ -2049,37 +1679,17 @@ date: ${note.date}
                       </div>
 
                       <div className="flex-1 min-h-0 overflow-y-auto w-full">
-                        {/* We will grid layout the exported notes if they span multiple langs */}
-                        {Object.keys(activeNote.summaries).length > 0 && (
-                          <div className={`grid w-full min-h-full ${Object.keys(activeNote.summaries).length > 1 ? `grid-cols-2 divide-x ${theme === 'dark' ? 'divide-neutral-800' : 'divide-neutral-200'}` : 'grid-cols-1'
-                            }`}>
-                            {Object.entries(activeNote.summaries).map(([lang, text]) => (
-                              <div key={lang} className="p-8 lg:p-12">
-                                {Object.keys(activeNote.summaries).length > 1 && (
-                                  <h3 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6">Translation: {lang}</h3>
-                                )}
-                                <div className={`prose max-w-none prose-h1:text-xl prose-h1:font-semibold prose-h2:text-lg prose-h2:font-medium prose-p:text-[14px] prose-p:leading-relaxed prose-ul:text-[14px] ${theme === 'dark' ? 'prose-invert prose-neutral prose-h1:text-neutral-100 prose-h2:text-neutral-200 prose-p:text-neutral-300 prose-a:text-white prose-ul:text-neutral-300' : 'prose-h1:text-neutral-900 prose-h2:text-neutral-800 prose-p:text-neutral-600 prose-a:text-blue-600 prose-ul:text-neutral-600'}`}>
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {text || "*Empty.*"}
-                                  </ReactMarkdown>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
                         <div className="max-w-4xl mx-auto p-8 lg:p-12">
-                          {activeNote.transcriptItems.length > 0 && (
-                            <div className={Object.keys(activeNote.summaries).length > 0 ? `mt-16 pt-8 border-t ${theme === 'dark' ? 'border-neutral-800/50' : 'border-neutral-200'}` : ""}>
-                              <h3 className={`text-[11px] font-semibold uppercase tracking-widest mb-6 border-b pb-4 ${theme === 'dark' ? 'text-neutral-500 border-neutral-800/40' : 'text-neutral-400 border-neutral-200'}`}>Raw Transcript Timeline</h3>
-                              <div className="space-y-4">
-                                {activeNote.transcriptItems.map((item, idx) => (
-                                  <div key={idx} className={`p-4 rounded-lg border text-[13px] leading-relaxed whitespace-pre-wrap break-words shadow-sm ${theme === 'dark' ? 'bg-[#111] border-neutral-800/50 text-neutral-400' : 'bg-white border-neutral-200 text-neutral-600'}`}>
-                                    {item.text}
-                                  </div>
-                                ))}
-                              </div>
+                          {activeNote.transcriptItems.length > 0 ? (
+                            <div className="space-y-4">
+                              {activeNote.transcriptItems.map((item, idx) => (
+                                <div key={idx} className={`p-4 rounded-lg border text-[15px] leading-[1.8] break-words shadow-sm prose max-w-none prose-p:my-2 prose-p:leading-[1.8] prose-strong:font-semibold ${theme === 'dark' ? 'prose-invert bg-[#111] border-neutral-800/50 text-neutral-200' : 'bg-white border-neutral-200 text-neutral-700'}`}>
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
+                                </div>
+                              ))}
                             </div>
+                          ) : (
+                            <p className="text-sm text-neutral-500 italic">No transcript available.</p>
                           )}
                         </div>
                       </div>
