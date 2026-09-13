@@ -5,6 +5,7 @@ export interface TranscriptItem {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  translation?: string; // Live Chinese translation of `text` (when translation is enabled)
   isFinal: boolean;
 }
 
@@ -24,6 +25,7 @@ interface AppState {
   selectedMicId: string; // For audio input device
   isMicEnabled: boolean; // For toggling microphone
   isSystemAudioEnabled: boolean; // For toggling system audio
+  isTranslationEnabled: boolean; // Live translate everything into Chinese (split view)
 
   // Auth State
   isAuthenticated: boolean;
@@ -50,6 +52,7 @@ interface AppState {
   setSelectedMicId: (id: string) => void;
   setIsMicEnabled: (val: boolean) => void;
   setIsSystemAudioEnabled: (val: boolean) => void;
+  setIsTranslationEnabled: (val: boolean) => void;
   setIsAuthenticated: (val: boolean) => void;
   setUserEmail: (email: string | null) => void;
   setTier: (tier: 'free' | 'pro') => void;
@@ -80,6 +83,7 @@ export const useAppStore = create<AppState>()(
       selectedMicId: "default",
       isMicEnabled: true,
       isSystemAudioEnabled: true,
+      isTranslationEnabled: false,
       isAuthenticated: false,
       userEmail: null,
       tier: 'free',
@@ -97,6 +101,7 @@ export const useAppStore = create<AppState>()(
       setSelectedMicId: (id) => set({ selectedMicId: id }),
       setIsMicEnabled: (val) => set({ isMicEnabled: val }),
       setIsSystemAudioEnabled: (val) => set({ isSystemAudioEnabled: val }),
+      setIsTranslationEnabled: (val) => set({ isTranslationEnabled: val }),
       setIsAuthenticated: (val) => set({ isAuthenticated: val }),
       setUserEmail: (email) => set({ userEmail: email }),
       setTier: (tier) => set({ tier }),
@@ -137,6 +142,7 @@ export const useAppStore = create<AppState>()(
         selectedMicId: state.selectedMicId,
         isMicEnabled: state.isMicEnabled,
         isSystemAudioEnabled: state.isSystemAudioEnabled,
+        isTranslationEnabled: state.isTranslationEnabled,
         isAuthenticated: state.isAuthenticated,
         userEmail: state.userEmail,
         theme: state.theme,

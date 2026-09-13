@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Monitor, Square, Loader2, List, LayoutDashboard, Clock, Trash2, Lock, Save, RadioTower, Download, Upload, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play, Search, Copy } from "lucide-react";
+import { memo, useEffect, useRef, useState } from "react";
+import { Mic, MicOff, Monitor, Square, Loader2, List, LayoutDashboard, Clock, Trash2, Lock, Save, RadioTower, Download, Upload, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play, Search, Copy, Languages } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -44,6 +44,45 @@ const AVAILABLE_LANGUAGES = [
   { code: 'no', label: 'Norwegian', native: 'Norsk' },
 ];
 
+// Memoized so finalized bubbles don't re-parse markdown on every live token (long sessions).
+const TranscriptBubble = memo(function TranscriptBubble({ item, theme }: { item: TranscriptItem; theme: 'light' | 'dark' }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-start w-full"
+    >
+      <div className={`relative p-4 rounded-2xl border w-full flex flex-col gap-1.5 transition-all duration-700 overflow-hidden ${!item.isFinal 
+        ? (theme === 'dark' ? 'bg-white/5 backdrop-blur-2xl border-white/10 shadow-[0_8px_30px_rgba(255,255,255,0.04)] scale-[1.01]' : 'bg-white/60 backdrop-blur-2xl border-neutral-300 shadow-[0_8px_30px_rgba(0,0,0,0.06)] scale-[1.01]')
+        : (theme === 'dark' ? (item.role === 'user' ? 'bg-[#151515] border-neutral-800/80 shadow-sm' : 'bg-[#0f172a]/40 border-blue-900/30 shadow-sm') : (item.role === 'user' ? 'bg-[#f4f4f5] border-neutral-200/80 shadow-sm' : 'bg-blue-50/50 border-blue-200/50 shadow-sm'))
+        }`}>
+        
+        {!item.isFinal && (
+          <div className="absolute inset-0 pointer-events-none rounded-2xl z-0">
+            <div className={`absolute inset-0 opacity-50 ${theme === 'dark' ? 'bg-gradient-to-tr from-white/5 via-white/10 to-transparent' : 'bg-gradient-to-tr from-black/5 via-transparent to-white/40'} animate-pulse rounded-2xl`} />
+            <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/20 pointer-events-none mix-blend-overlay animate-pulse" />
+          </div>
+        )}
+
+        <span className={`relative z-10 text-[9px] font-bold uppercase tracking-widest mb-1 ${item.role === 'user' ? 'text-neutral-500' : 'text-blue-500'}`}>
+          {item.role === 'user' ? 'Live Room' : 'AI Assistant'}
+        </span>
+        <div className={`relative z-10 text-[17px] leading-[1.8] whitespace-pre-wrap break-words font-medium prose prose-p:my-2 prose-p:leading-[1.8] max-w-none ${theme === 'dark' ? 'prose-invert' : ''} ${item.isFinal ? (theme === 'dark' ? 'text-white' : 'text-neutral-900') : (theme === 'dark' ? 'text-neutral-400 italic' : 'text-neutral-500 italic')}`}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
+// Subtitle-style Chinese translation block, one line per speaker turn.
+const TranslationBlock = memo(function TranslationBlock({ text, theme }: { text: string; theme: 'light' | 'dark' }) {
+  return (
+    <div className={`text-[22px] sm:text-[26px] leading-[1.7] whitespace-pre-wrap break-words font-medium mb-3 ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>
+      {text}
+    </div>
+  );
+});
+
 export default function Home() {
   const {
     isListening,
@@ -76,6 +115,8 @@ export default function Home() {
     setIsMicEnabled,
     isSystemAudioEnabled,
     setIsSystemAudioEnabled,
+    isTranslationEnabled,
+    setIsTranslationEnabled,
     theme,
     setTheme,
   } = useAppStore();
@@ -89,8 +130,9 @@ export default function Home() {
   const [requirePassword, setRequirePassword] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("");
 
-  const { connect, stopListening } = useAudioRealtime();
+  const { connect, stopListening, restartStream } = useAudioRealtime();
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
+  const translationContainerRef = useRef<HTMLDivElement>(null);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const micDropdownRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -256,16 +298,26 @@ export default function Home() {
     return () => navigator.mediaDevices?.removeEventListener('devicechange', fetchMics);
   }, []);
 
-  // Auto-scroll transcript
+  // Auto-scroll transcript (and translation panel) while the user is near the bottom
   useEffect(() => {
-    if (transcriptContainerRef.current) {
-      const container = transcriptContainerRef.current;
+    for (const container of [transcriptContainerRef.current, translationContainerRef.current]) {
+      if (!container) continue;
       const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
       if (isAtBottom) {
         container.scrollTop = container.scrollHeight;
       }
     }
-  }, [transcriptItems, activeView]);
+  }, [transcriptItems, activeView, isTranslationEnabled]);
+
+  const toggleTranslation = () => {
+    const next = !isTranslationEnabled;
+    setIsTranslationEnabled(next);
+    // Translation is configured per socket, so reopen it without stopping capture.
+    if (isListening) {
+      restartStream();
+      toast.success(next ? "中文翻译已开启" : "中文翻译已关闭");
+    }
+  };
 
   // Export Logic
   const handleExportNotes = async () => {
@@ -1473,12 +1525,27 @@ date: ${note.date}
                 <div className="flex-1 flex flex-col min-h-0 relative">
 
                 {/* Live Transcript */}
-                <div className={`flex flex-col h-full min-h-0 overflow-hidden relative ${theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
+                <div className={`flex flex-col min-h-0 overflow-hidden relative ${isTranslationEnabled ? 'basis-1/2 flex-1' : 'h-full'} ${theme === 'dark' ? 'bg-[#0a0a0a]' : 'bg-white'}`}>
                   <div className={`min-h-[48px] border-b flex items-center justify-between px-3 sm:px-6 shrink-0 ${theme === 'dark' ? 'border-neutral-800/80 bg-black' : 'border-neutral-200/80 bg-[#f4f4f5]'}`}>
                     <h2 className={`flex text-[10px] font-semibold tracking-widest uppercase items-center gap-2 ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-600'}`}>
                       <List className="w-3.5 h-3.5" /> Live Transcript
                     </h2>
                     <div className="flex items-center gap-1 sm:gap-2">
+                      <button
+                        onClick={toggleTranslation}
+                        role="switch"
+                        aria-checked={isTranslationEnabled}
+                        className={`flex items-center gap-1.5 text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${isTranslationEnabled
+                          ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-500'
+                          : theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-neutral-300 hover:text-white hover:bg-neutral-800' : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm'}`}
+                        title="Live-translate everything into Chinese"
+                      >
+                        <Languages className="w-3.5 h-3.5" />
+                        <span>中文翻译</span>
+                        <span className={`relative inline-block w-6 h-3.5 rounded-full transition-colors ${isTranslationEnabled ? 'bg-emerald-500' : theme === 'dark' ? 'bg-neutral-700' : 'bg-neutral-300'}`}>
+                          <span className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-all ${isTranslationEnabled ? 'left-3' : 'left-0.5'}`} />
+                        </span>
+                      </button>
                       <button
                         onClick={handleManualSave}
                         disabled={transcriptItems.length === 0}
@@ -1513,34 +1580,44 @@ date: ${note.date}
                       </div>
                     ) : (
                       transcriptItems.map((item, idx) => (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                          key={item.id + idx} className="flex flex-col items-start w-full"
-                        >
-                          <div className={`relative p-4 rounded-2xl border w-full flex flex-col gap-1.5 transition-all duration-700 overflow-hidden ${!item.isFinal 
-                            ? (theme === 'dark' ? 'bg-white/5 backdrop-blur-2xl border-white/10 shadow-[0_8px_30px_rgba(255,255,255,0.04)] scale-[1.01]' : 'bg-white/60 backdrop-blur-2xl border-neutral-300 shadow-[0_8px_30px_rgba(0,0,0,0.06)] scale-[1.01]')
-                            : (theme === 'dark' ? (item.role === 'user' ? 'bg-[#151515] border-neutral-800/80 shadow-sm' : 'bg-[#0f172a]/40 border-blue-900/30 shadow-sm') : (item.role === 'user' ? 'bg-[#f4f4f5] border-neutral-200/80 shadow-sm' : 'bg-blue-50/50 border-blue-200/50 shadow-sm'))
-                            }`}>
-                            
-                            {!item.isFinal && (
-                              <div className="absolute inset-0 pointer-events-none rounded-2xl z-0">
-                                <div className={`absolute inset-0 opacity-50 ${theme === 'dark' ? 'bg-gradient-to-tr from-white/5 via-white/10 to-transparent' : 'bg-gradient-to-tr from-black/5 via-transparent to-white/40'} animate-pulse rounded-2xl`} />
-                                <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/20 pointer-events-none mix-blend-overlay animate-pulse" />
-                              </div>
-                            )}
-
-                            <span className={`relative z-10 text-[9px] font-bold uppercase tracking-widest mb-1 ${item.role === 'user' ? 'text-neutral-500' : 'text-blue-500'}`}>
-                              {item.role === 'user' ? 'Live Room' : 'AI Assistant'}
-                            </span>
-                            <div className={`relative z-10 text-[17px] leading-[1.8] whitespace-pre-wrap break-words font-medium prose prose-p:my-2 prose-p:leading-[1.8] max-w-none ${theme === 'dark' ? 'prose-invert' : ''} ${item.isFinal ? (theme === 'dark' ? 'text-white' : 'text-neutral-900') : (theme === 'dark' ? 'text-neutral-400 italic' : 'text-neutral-500 italic')}`}>
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.text}</ReactMarkdown>
-                            </div>
-                          </div>
-                        </motion.div>
+                        <TranscriptBubble key={item.id + idx} item={item} theme={theme} />
                       ))
                     )}
                   </div>
                 </div>
+
+                {/* Live Chinese Translation (bottom half) */}
+                {isTranslationEnabled && (
+                  <div className={`flex flex-col basis-1/2 flex-1 min-h-0 overflow-hidden border-t ${theme === 'dark' ? 'bg-black border-neutral-800' : 'bg-[#fafafa] border-neutral-200'}`}>
+                    <div className={`min-h-[40px] border-b flex items-center justify-between px-3 sm:px-6 shrink-0 ${theme === 'dark' ? 'border-neutral-800/80 bg-black' : 'border-neutral-200/80 bg-[#f4f4f5]'}`}>
+                      <h2 className={`flex text-[10px] font-semibold tracking-widest uppercase items-center gap-2 ${theme === 'dark' ? 'text-emerald-500/80' : 'text-emerald-700'}`}>
+                        <Languages className="w-3.5 h-3.5" /> 中文实时翻译
+                      </h2>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(transcriptItems.map(i => i.translation || '').filter(Boolean).join('\n'));
+                          toast.success("翻译已复制");
+                        }}
+                        disabled={!transcriptItems.some(i => i.translation)}
+                        className={`p-1.5 rounded-md transition-all border disabled:opacity-40 disabled:cursor-not-allowed ${theme === 'dark' ? 'border-neutral-700 bg-neutral-900 text-neutral-300 hover:text-white hover:bg-neutral-800' : 'border-neutral-200 bg-white text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50 shadow-sm'}`}
+                        title="Copy Translation"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0" ref={translationContainerRef}>
+                      {transcriptItems.some(i => i.translation) ? (
+                        transcriptItems.map((item, idx) => item.translation ? (
+                          <TranslationBlock key={item.id + idx} text={item.translation} theme={theme} />
+                        ) : null)
+                      ) : (
+                        <div className={`h-full flex items-center justify-center text-sm ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                          {isListening ? "等待语音…英文会实时翻译成中文显示在这里" : "点击 Start 开始，所有收到的声音都会翻译成中文"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 </div> {/* End of Main Content Areas Grid */}
               </div> {/* End of Workspace Container */}
