@@ -103,6 +103,8 @@ export function useAudioRealtime() {
   const sysStreamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const captureNodeRef = useRef<AudioWorkletNode | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const levelBufRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const wakeLockRef = useRef<any>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptsRef = useRef(0);
@@ -238,6 +240,7 @@ export function useAudioRealtime() {
         id,
         role: "user",
         text: finalOrigRef.current + pendingOrigText,
+        finalLength: finalOrigRef.current.length,
         translation: translate || finalTransRef.current ? finalTransRef.current + pendingTransText : undefined,
         isFinal: shouldRollover || res.finished || false,
       });
@@ -299,6 +302,7 @@ export function useAudioRealtime() {
     if (sysStreamRef.current) sysStreamRef.current.getTracks().forEach(t => t.stop());
     micStreamRef.current = null;
     sysStreamRef.current = null;
+    analyserRef.current = null;
     if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') audioCtxRef.current.close();
     audioCtxRef.current = null;
 
@@ -309,12 +313,12 @@ export function useAudioRealtime() {
     setIsConnecting(false);
   }, [setIsListening, setIsConnecting]);
 
-  const connect = useCallback(async (isResume: boolean = false) => {
+  const connect = useCallback(async (isResume: boolean = false, opts?: { micOnly?: boolean }) => {
     try {
       // Phones can't share tab/system audio, so they always listen through the mic.
       const systemAudioSupported = canCaptureSystemAudio();
-      const useSystemAudio = isSystemAudioEnabled && systemAudioSupported;
-      const useMic = isMicEnabled || !systemAudioSupported;
+      const useSystemAudio = isSystemAudioEnabled && systemAudioSupported && !opts?.micOnly;
+      const useMic = isMicEnabled || !systemAudioSupported || !!opts?.micOnly;
       if (!useMic && !useSystemAudio) {
         throw new Error("Please enable at least one audio source (Microphone or System Audio).");
       }
@@ -395,9 +399,21 @@ export function useAudioRealtime() {
       });
       captureNodeRef.current = captureNode;
 
-      if (micStream) audioCtx.createMediaStreamSource(micStream).connect(captureNode);
+      // Taps the same sources so the UI can show that audio is actually arriving.
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyserRef.current = analyser;
+      levelBufRef.current = new Uint8Array(analyser.fftSize);
+
+      if (micStream) {
+        const src = audioCtx.createMediaStreamSource(micStream);
+        src.connect(captureNode);
+        src.connect(analyser);
+      }
       if (sysStream && hasSysAudio) {
-        audioCtx.createMediaStreamSource(new MediaStream(sysStream.getAudioTracks())).connect(captureNode);
+        const src = audioCtx.createMediaStreamSource(new MediaStream(sysStream.getAudioTracks()));
+        src.connect(captureNode);
+        src.connect(analyser);
       }
       // The graph must reach the destination for Safari to pull audio; keep it silent.
       const mute = audioCtx.createGain();
@@ -447,5 +463,19 @@ export function useAudioRealtime() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { connect, stopListening, restartStream };
+  // Current input loudness, 0 (silence) to 1. Cheap enough to call every animation frame.
+  const getLevel = useCallback(() => {
+    const analyser = analyserRef.current;
+    const buf = levelBufRef.current;
+    if (!analyser || !buf) return 0;
+    analyser.getByteTimeDomainData(buf);
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) {
+      const v = (buf[i] - 128) / 128;
+      sum += v * v;
+    }
+    return Math.min(1, Math.sqrt(sum / buf.length) * 4);
+  }, []);
+
+  return { connect, stopListening, restartStream, getLevel };
 }

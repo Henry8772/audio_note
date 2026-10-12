@@ -6,6 +6,7 @@ export interface TranscriptItem {
   role: 'user' | 'assistant';
   text: string;
   translation?: string; // Live Chinese translation of `text` (when translation is enabled)
+  finalLength?: number; // How much of `text` is settled; the rest may still be revised
   isFinal: boolean;
 }
 
