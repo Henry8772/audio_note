@@ -1,14 +1,15 @@
 "use client";
 
 import { memo, useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Monitor, Square, Loader2, Clock, Trash2, Lock, Save, RadioTower, Download, Upload, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play, Search, Copy, Languages } from "lucide-react";
+import { Mic, MicOff, Monitor, Square, Loader2, Clock, Trash2, Lock, Save, RadioTower, Download, Upload, LogOut, Settings, Sparkles, CheckCircle2, Globe, Sun, Moon, Play, Search, Copy, Languages, RefreshCw, Cloud, CloudOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { useAppStore, TranscriptItem, SavedNote } from "@/lib/store";
+import { useAppStore, TranscriptItem, SavedNote, selectVisibleNotes } from "@/lib/store";
+import { startNotesSync, stopNotesSync, syncNotesNow, flushAndForgetUser } from "@/lib/notesSync";
 import { useAudioRealtime, canCaptureSystemAudio } from "@/lib/useAudioRealtime";
 import { createClient } from "@/utils/supabase/client";
 import { useMutation } from "convex/react";
@@ -120,6 +121,58 @@ const LIVE_RED = '#e5484d';
 // Invite codes arrive as ?invite=CODE and wait here until the visitor has an account to attach Pro to.
 const INVITE_STORAGE_KEY = "hearo-invite";
 
+// Shows whether this device's notes match the account; click to run a full sync.
+function SyncBadge({ isAuthenticated, status, lastSyncedAt, onClick }: {
+  isAuthenticated: boolean;
+  status: 'idle' | 'syncing' | 'synced' | 'offline' | 'error';
+  lastSyncedAt: string | null;
+  onClick: () => void;
+}) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick((n) => n + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  const ago = (() => {
+    const t = lastSyncedAt ? Date.parse(lastSyncedAt) : NaN;
+    if (!Number.isFinite(t)) return '';
+    const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+    if (s < 60) return 'just now';
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  })();
+
+  let Icon = Cloud;
+  let label = 'Sync';
+  let title = 'Sync notes across your devices';
+  let tone = 'text-[var(--muted)]';
+  if (!isAuthenticated) {
+    Icon = CloudOff; label = 'This device only'; title = 'Sign in to keep notes in sync across your devices';
+  } else if (status === 'syncing') {
+    Icon = RefreshCw; label = 'Syncing…';
+  } else if (status === 'offline') {
+    Icon = CloudOff; label = 'Offline'; title = 'Changes are saved here and will sync when you are back online';
+  } else if (status === 'error') {
+    Icon = CloudOff; label = 'Sync failed'; title = 'Click to retry'; tone = 'text-red-500';
+  } else if (status === 'synced' || lastSyncedAt) {
+    label = ago ? `Synced ${ago}` : 'Synced'; title = 'Click to re-check every note against your account';
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={status === 'syncing'}
+      title={title}
+      className={`flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap transition-colors hover:text-[var(--fg)] disabled:cursor-default ${tone}`}
+    >
+      <Icon className={`w-3.5 h-3.5 shrink-0 ${status === 'syncing' && isAuthenticated ? 'animate-spin' : ''}`} />
+      <span>{label}</span>
+    </button>
+  );
+}
+
 export default function HearoApp({ intro = false }: { intro?: boolean }) {
   const {
     isListening,
@@ -129,7 +182,7 @@ export default function HearoApp({ intro = false }: { intro?: boolean }) {
     setSelectedLanguages,
     activeView,
     setActiveView,
-    savedNotes,
+    savedNotes: allSavedNotes,
     deleteSavedNote,
     addSavedNote,
     updateSavedNote,
@@ -137,6 +190,10 @@ export default function HearoApp({ intro = false }: { intro?: boolean }) {
     setIsAuthenticated,
     userEmail,
     setUserEmail,
+    userId,
+    setUserId,
+    syncStatus,
+    lastSyncedAt,
     selectedMicId,
     setSelectedMicId,
     freeUsageTime,
@@ -157,6 +214,9 @@ export default function HearoApp({ intro = false }: { intro?: boolean }) {
     theme,
     setTheme,
   } = useAppStore();
+
+  // Only this account's notes (plus ones made signed-out, which get claimed on sign-in).
+  const savedNotes = selectVisibleNotes(allSavedNotes, userId);
 
   const createSession = useMutation(api.mutations.createSession);
   const updateTranscriptMutation = useMutation(api.mutations.updateTranscript);
@@ -290,6 +350,8 @@ export default function HearoApp({ intro = false }: { intro?: boolean }) {
       if (session?.user) {
         setIsAuthenticated(true);
         setUserEmail(session.user.email || null);
+        setUserId(session.user.id);
+        startNotesSync(supabase, session.user.id);
         claimInvite();
       }
     });
@@ -300,22 +362,38 @@ export default function HearoApp({ intro = false }: { intro?: boolean }) {
       if (session?.user) {
         setIsAuthenticated(true);
         setUserEmail(session.user.email || null);
+        setUserId(session.user.id);
+        startNotesSync(supabase, session.user.id);
         claimInvite();
       } else {
+        stopNotesSync();
         setIsAuthenticated(false);
         setUserEmail(null);
+        setUserId(null);
         setTier('free');
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => { subscription.unsubscribe(); stopNotesSync(); };
   }, [supabase.auth, setIsAuthenticated, setUserEmail, setTier]);
 
   const handleSignOut = async () => {
+    // Upload anything not yet synced, then take this account's notes off this device.
+    const uid = useAppStore.getState().userId;
+    const flushed = uid ? await flushAndForgetUser(uid) : true;
     await supabase.auth.signOut();
     setIsAuthenticated(false);
     setUserEmail(null);
-    toast.success("Signed out successfully");
+    setUserId(null);
+    if (flushed) toast.success("Signed out successfully");
+    else toast.warning("Signed out. Some notes hadn't synced yet; they'll upload next time you sign in here.");
+  };
+
+  const handleSyncNow = async () => {
+    if (!isAuthenticated) return setShowAuthModal(true);
+    const ok = await syncNotesNow({ full: true });
+    if (ok) toast.success("Notes are in sync across your devices");
+    else toast.error(navigator.onLine ? "Sync failed. Try again in a moment." : "You're offline. Notes will sync when you're back online.");
   };
 
   // Free Usage Tracker (15 mins = 900 seconds)
@@ -1570,7 +1648,10 @@ date: ${note.date}
               className={`flex flex-col h-full w-full absolute inset-0 ${theme === 'dark' ? 'bg-black' : 'bg-[#f4f4f5]'}`}
             >
               <header className={`h-14 border-b flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 ${theme === 'dark' ? 'border-neutral-800 bg-black' : 'border-neutral-200 bg-[#f4f4f5]'}`}>
-                <h2 className={`text-[13px] sm:text-sm font-semibold tracking-wide truncate mr-2 ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>Notes Library</h2>
+                <div className="flex items-center gap-3 min-w-0 mr-2">
+                  <h2 className={`text-[13px] sm:text-sm font-semibold tracking-wide truncate ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>Notes Library</h2>
+                  <SyncBadge isAuthenticated={isAuthenticated} status={syncStatus} lastSyncedAt={lastSyncedAt} onClick={handleSyncNow} />
+                </div>
 
                 <div className="flex items-center gap-2">
                   <button
