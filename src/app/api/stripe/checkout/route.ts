@@ -3,9 +3,9 @@ import Stripe from 'stripe';
 import { createClient } from '@/utils/supabase/server';
 import { getPriceId, PlanKey } from '@/config/stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-02-25.clover',
-});
+// Created per request, not at import, so `next build` works without the Stripe key.
+const stripeClient = () =>
+  new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' });
 
 export async function POST(req: Request) {
   try {
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       return new NextResponse('Invalid Plan ID', { status: 400 });
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripeClient().checkout.sessions.create({
       payment_method_types: ['card'],
       billing_address_collection: 'required',
       customer_email: user.email,

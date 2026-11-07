@@ -3,9 +3,9 @@ import Stripe from 'stripe';
 import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-02-25.clover',
-});
+// Created per request, not at import, so `next build` works without the Stripe key.
+const stripeClient = () =>
+  new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' });
 
 export async function POST(req: Request) {
   try {
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    const { url } = await stripe.billingPortal.sessions.create({
+    const { url } = await stripeClient().billingPortal.sessions.create({
       customer: userData.stripe_customer_id,
       return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/app`,
     });
