@@ -150,6 +150,8 @@ function writeIndex(state) {
 
 function apply(state, row) {
   const prev = state.notes[row.id];
+  // The cursor overlap re-reads the last few rows every pass: skip ones already written.
+  if (prev && prev.server_updated_at === row.server_updated_at) return null;
   if (row.deleted_at) {
     if (prev) {
       rmSync(join(NOTES, prev.file), { force: true });
@@ -165,7 +167,7 @@ function apply(state, row) {
 
   if (prev && prev.file !== file) rmSync(join(NOTES, prev.file), { force: true });
   writeFileSync(join(NOTES, file), render(row));
-  state.notes[row.id] = { file, title: row.title, recorded_at: row.recorded_at, source: sourceOf(row) };
+  state.notes[row.id] = { file, title: row.title, recorded_at: row.recorded_at, source: sourceOf(row), server_updated_at: row.server_updated_at };
   return prev ? 'updated' : 'added';
 }
 
